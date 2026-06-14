@@ -1,7 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
-import { MailOpen, PenSquare, Users, BookOpen, Rss, Github } from 'lucide-react';
+import { MailOpen, PenSquare, Users, BookOpen, Rss, CalendarClock } from 'lucide-react';
 import { LoginArea } from '@/components/auth/LoginArea';
 import { cn } from '@/lib/utils';
+import { useDispatchScheduler } from '@/hooks/useDispatchScheduler';
+import { useMailDispatches } from '@/hooks/useMailDispatches';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -12,10 +14,17 @@ const navItems = [
   { to: '/compose', label: 'New Issue', icon: PenSquare },
   { to: '/subscribers', label: 'Subscribers', icon: Users },
   { to: '/issues', label: 'All Issues', icon: BookOpen },
+  { to: '/dispatches', label: 'Dispatches', icon: CalendarClock },
 ];
 
 export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
+
+  // Run background scheduler — fires due dispatches automatically
+  useDispatchScheduler();
+
+  const { pendingDispatches } = useMailDispatches();
+  const pendingCount = pendingDispatches.length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950">
@@ -36,12 +45,13 @@ export function AppLayout({ children }: AppLayoutProps) {
           <nav className="hidden md:flex items-center gap-1">
             {navItems.map(({ to, label, icon: Icon }) => {
               const active = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
+              const isDispatches = to === '/dispatches';
               return (
                 <Link
                   key={to}
                   to={to}
                   className={cn(
-                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors relative',
                     active
                       ? 'bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -49,6 +59,11 @@ export function AppLayout({ children }: AppLayoutProps) {
                 >
                   <Icon className="w-4 h-4" />
                   {label}
+                  {isDispatches && pendingCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center">
+                      {pendingCount > 9 ? '9+' : pendingCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}
@@ -65,12 +80,13 @@ export function AppLayout({ children }: AppLayoutProps) {
           <div className="flex overflow-x-auto px-2 py-1.5 gap-1 scrollbar-none">
             {navItems.map(({ to, label, icon: Icon }) => {
               const active = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
+              const isDispatches = to === '/dispatches';
               return (
                 <Link
                   key={to}
                   to={to}
                   className={cn(
-                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors shrink-0',
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors shrink-0 relative',
                     active
                       ? 'bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -78,6 +94,11 @@ export function AppLayout({ children }: AppLayoutProps) {
                 >
                   <Icon className="w-4 h-4" />
                   {label}
+                  {isDispatches && pendingCount > 0 && (
+                    <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold">
+                      {pendingCount > 9 ? '9+' : pendingCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}

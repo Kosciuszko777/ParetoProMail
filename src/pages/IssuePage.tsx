@@ -1,18 +1,15 @@
 import { useParams, Link } from 'react-router-dom';
 import { useSeoMeta } from '@unhead/react';
-import { ArrowLeft, Calendar, Hash, Users, Send, Loader2 } from 'lucide-react';
+import { ArrowLeft, Calendar, Hash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AppLayout } from '@/components/AppLayout';
+import { MailDispatchPanel } from '@/components/MailDispatchPanel';
 import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { useNostrPublish } from '@/hooks/useNostrPublish';
-import { useNewsletterSubscribers } from '@/hooks/useNewsletterSubscribers';
-import { useToast } from '@/hooks/useToast';
-import { useState } from 'react';
 import { parseNewsletterIssue } from '@/lib/newsletter';
 import { nip19 } from 'nostr-tools';
 
@@ -20,10 +17,6 @@ export default function IssuePage() {
   const { id = '' } = useParams<{ id: string }>();
   const { nostr } = useNostr();
   const { user } = useCurrentUser();
-  const { mutateAsync: publish } = useNostrPublish();
-  const { toast } = useToast();
-  const [sending, setSending] = useState(false);
-  const [sentCount, setSentCount] = useState<number | null>(null);
 
   const { data: event, isLoading } = useQuery({
     queryKey: ['issue-event', id],
@@ -42,11 +35,10 @@ export default function IssuePage() {
     description: issue?.summary,
   });
 
-  // Get the newsletter pubkey and slug from the issue's `a` tag
+  // Derive newsletter coordinates from the issue's `a` tag
   const aTagValue = event?.tags.find(([n]) => n === 'a')?.[1] ?? '';
   const [, issuePubkey = '', issueSlug = ''] = aTagValue.split(':');
 
-  const { data: subscribers } = useNewsletterSubscribers(issuePubkey, issueSlug);
   const isOwner = user?.pubkey === event?.pubkey;
 
   const date = issue
@@ -54,49 +46,6 @@ export default function IssuePage() {
         year: 'numeric', month: 'long', day: 'numeric',
       })
     : '';
-
-  async function handleSendToSubscribers() {
-    if (!user || !event || !subscribers || subscribers.length === 0) return;
-    setSending(true);
-    let count = 0;
-    try {
-      // Send as gift-wrapped kind 1059 to each subscriber
-      for (const subscriber of subscribers) {
-        try {
-          if (!user.signer.nip44) continue;
-          // Encrypt the issue event JSON as a rumor
-          const rumor = {
-            kind: event.kind,
-            pubkey: event.pubkey,
-            created_at: event.created_at,
-            tags: event.tags,
-            content: event.content,
-          };
-          const ciphertext = await user.signer.nip44.encrypt(
-            subscriber.pubkey,
-            JSON.stringify(rumor)
-          );
-          await publish({
-            kind: 1059,
-            content: ciphertext,
-            tags: [['p', subscriber.pubkey]],
-          });
-          count++;
-        } catch {
-          // Skip failed deliveries, continue with others
-        }
-      }
-      setSentCount(count);
-      toast({
-        title: 'Delivered!',
-        description: `Issue sent to ${count} Nostr subscriber${count !== 1 ? 's' : ''}.`,
-      });
-    } catch (err) {
-      toast({ title: 'Send error', description: String(err), variant: 'destructive' });
-    } finally {
-      setSending(false);
-    }
-  }
 
   if (isLoading) {
     return (
@@ -131,6 +80,7 @@ export default function IssuePage() {
   return (
     <AppLayout>
       <div className="max-w-3xl mx-auto">
+        {/* Back nav */}
         <div className="flex items-center gap-3 mb-8">
           <Button variant="ghost" size="sm" asChild>
             <Link to={issueSlug ? `/newsletter/${issuePubkey}/${issueSlug}` : '/'}>
@@ -140,12 +90,14 @@ export default function IssuePage() {
           </Button>
         </div>
 
+        {/* Header image */}
         {issue.image && (
           <div className="w-full h-56 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 mb-8">
             <img src={issue.image} alt={issue.title} className="w-full h-full object-cover" />
           </div>
         )}
 
+        {/* Title block */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-3 leading-tight">
             {issue.title}
@@ -180,46 +132,19 @@ export default function IssuePage() {
           )}
         </div>
 
-        {/* Send to subscribers (owner only) */}
-        {isOwner && subscribers && subscribers.length > 0 && (
-          <Card className="mb-8 border-indigo-100 dark:border-indigo-900 bg-indigo-50/50 dark:bg-indigo-950/30">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base text-indigo-700 dark:text-indigo-300">Send to Subscribers</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="flex items-center justify-between gap-4 flex-wrap">
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  <span className="flex items-center gap-1.5">
-                    <Users className="w-4 h-4" />
-                    {subscribers.length} Nostr subscriber{subscribers.length !== 1 ? 's' : ''} will receive a gift-wrapped copy (NIP-59).
-                  </span>
-                </p>
-                <Button
-                  onClick={handleSendToSubscribers}
-                  disabled={sending || sentCount !== null}
-                  size="sm"
-                  className="bg-indigo-600 hover:bg-indigo-700 shrink-0"
-                >
-                  {sending ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-                      Sending…
-                    </>
-                  ) : sentCount !== null ? (
-                    <>Sent to {sentCount}</>
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4 mr-1.5" />
-                      Send Now
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        {/* ── Mail Dispatch Panel (owner only) ── */}
+        {isOwner && (
+          <div className="mb-8">
+            <MailDispatchPanel
+              issueEvent={event}
+              issueTitle={issue.title}
+              newsletterPubkey={issuePubkey}
+              newsletterSlug={issueSlug}
+            />
+          </div>
         )}
 
-        {/* Content */}
+        {/* Article content */}
         <div className="prose prose-slate dark:prose-invert max-w-none prose-headings:font-bold prose-a:text-indigo-600 dark:prose-a:text-indigo-400 prose-img:rounded-xl leading-relaxed">
           {issue.content.split('\n').map((line, i) => {
             if (line.startsWith('# ')) {
@@ -233,7 +158,6 @@ export default function IssuePage() {
             } else if (line === '') {
               return <br key={i} />;
             } else {
-              // Render **bold** and *italic* safely
               const parts = line.split(/(\*\*.*?\*\*|\*.*?\*)/g);
               return (
                 <p key={i}>

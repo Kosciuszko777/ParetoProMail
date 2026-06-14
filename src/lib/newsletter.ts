@@ -96,3 +96,61 @@ export function parseNewsletterIssue(event: { id: string; pubkey: string; tags: 
 export function newsletterATag(pubkey: string, slug: string): string {
   return `${NEWSLETTER_KIND}:${pubkey}:${slug}`;
 }
+
+// ─── Mail Dispatch ────────────────────────────────────────────────────────────
+
+export type DispatchStatus = 'scheduled' | 'sending' | 'sent' | 'failed' | 'cancelled';
+
+export interface MailDispatch {
+  /** Unique local ID */
+  id: string;
+  /** Nostr event ID of the kind:30023 issue */
+  issueEventId: string;
+  /** Issue title (for display) */
+  issueTitle: string;
+  /** Newsletter slug */
+  newsletterSlug: string;
+  /** Author pubkey hex */
+  pubkey: string;
+  /** Unix timestamp when to send (for immediate: ~now) */
+  scheduledAt: number;
+  /** Actual send timestamp (set when sending begins) */
+  sentAt?: number;
+  /** Number of recipients */
+  recipientCount?: number;
+  /** How many were successfully delivered */
+  deliveredCount?: number;
+  status: DispatchStatus;
+  /** Optional note / error message */
+  note?: string;
+}
+
+export const MAIL_DISPATCH_STORAGE_KEY = 'nostrmail:dispatches';
+
+export function loadDispatches(pubkey: string): MailDispatch[] {
+  try {
+    const raw = localStorage.getItem(`${MAIL_DISPATCH_STORAGE_KEY}:${pubkey}`);
+    if (!raw) return [];
+    return JSON.parse(raw) as MailDispatch[];
+  } catch {
+    return [];
+  }
+}
+
+export function saveDispatches(pubkey: string, dispatches: MailDispatch[]): void {
+  localStorage.setItem(
+    `${MAIL_DISPATCH_STORAGE_KEY}:${pubkey}`,
+    JSON.stringify(dispatches)
+  );
+}
+
+export function upsertDispatch(pubkey: string, dispatch: MailDispatch): void {
+  const existing = loadDispatches(pubkey);
+  const idx = existing.findIndex((d) => d.id === dispatch.id);
+  if (idx >= 0) {
+    existing[idx] = dispatch;
+  } else {
+    existing.unshift(dispatch);
+  }
+  saveDispatches(pubkey, existing);
+}
