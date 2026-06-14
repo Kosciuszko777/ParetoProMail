@@ -31,7 +31,7 @@ export default function IssuePage() {
   const issue = event ? parseNewsletterIssue(event) : null;
 
   useSeoMeta({
-    title: issue ? `${issue.title} — NostrMail` : 'Issue — NostrMail',
+    title: issue ? `${issue.title} — Pareto Pro Mail` : 'Issue — Pareto Pro Mail',
     description: issue?.summary,
   });
 

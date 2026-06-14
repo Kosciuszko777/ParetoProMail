@@ -1,4 +1,4 @@
-# NIP-NN: Nostr Newsletter Protocol (NostrMail)
+# NIP-NN: Nostr Newsletter Protocol (Pareto Pro Mail)
 
 ## Abstract
 
@@ -69,7 +69,7 @@ Published by the newsletter **author**. Identified by `pubkey + kind + d-tag`. U
 | `t`         | NO       | Topic/hashtag (repeatable) |
 | `alt`       | YES      | Human-readable fallback (NIP-31 compliance) |
 
-> The `npub` of the author acts as the primary mailing address. Subscribers can address emails to `<npub>@nostrmail.example`.
+> The `npub` of the author acts as the primary mailing address. Subscribers can address emails to `<npub>@paretomail.example`.
 
 ---
 
@@ -210,7 +210,7 @@ When the author sends an issue, the client:
 Any newsletter can be addressed as:
 
 ```
-<npub>@nostrmail.example
+<npub>@paretomail.example
 ```
 
 Or more precisely, using a custom NIP-05-like syntax:

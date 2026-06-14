@@ -24,7 +24,7 @@ function slugify(text: string): string {
 }
 
 export default function CreateNewsletter() {
-  useSeoMeta({ title: 'Create Newsletter — NostrMail' });
+  useSeoMeta({ title: 'Create Newsletter — Pareto Pro Mail' });
 
   const navigate = useNavigate();
   const { user } = useCurrentUser();

@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/useToast';
 import { NEWSLETTER_KIND } from '@/lib/newsletter';
 
 export default function NewsletterSettingsPage() {
-  useSeoMeta({ title: 'Newsletter Settings — NostrMail' });
+  useSeoMeta({ title: 'Newsletter Settings — Pareto Pro Mail' });
 
   const { pubkey = '', slug = '' } = useParams<{ pubkey: string; slug: string }>();
   const navigate = useNavigate();

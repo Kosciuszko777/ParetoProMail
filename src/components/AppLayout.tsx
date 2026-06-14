@@ -37,7 +37,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               <MailOpen className="w-4 h-4 text-white" />
             </div>
             <span className="font-bold text-slate-900 dark:text-white text-lg tracking-tight">
-              NostrMail
+              Pareto Pro Mail
             </span>
           </Link>
 

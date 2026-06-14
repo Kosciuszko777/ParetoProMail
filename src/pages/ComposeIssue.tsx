@@ -21,7 +21,7 @@ import { NEWSLETTER_ISSUE_KIND, newsletterATag } from '@/lib/newsletter';
 import type { NostrEvent } from '@nostrify/nostrify';
 
 export default function ComposeIssue() {
-  useSeoMeta({ title: 'Compose Issue — NostrMail' });
+  useSeoMeta({ title: 'Compose Issue — Pareto Pro Mail' });
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();

@@ -125,7 +125,7 @@ export interface MailDispatch {
   note?: string;
 }
 
-export const MAIL_DISPATCH_STORAGE_KEY = 'nostrmail:dispatches';
+export const MAIL_DISPATCH_STORAGE_KEY = 'paretomail:dispatches';
 
 export function loadDispatches(pubkey: string): MailDispatch[] {
   try {

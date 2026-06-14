@@ -102,7 +102,7 @@ function HeroSection() {
           Decentralized Newsletters for Everyone
         </h1>
         <p className="text-indigo-100 text-lg mb-6 leading-relaxed">
-          NostrMail lets you create, send, and subscribe to newsletters using your Nostr identity.
+          Pareto Pro Mail lets you create, send, and subscribe to newsletters using your Nostr identity.
           No central server. No email service. Your audience, your keys, your freedom.
         </p>
         <div className="flex flex-wrap gap-4 text-sm">
@@ -248,11 +248,11 @@ function LoggedInDashboard() {
       {/* NIP info card */}
       <Card className="mt-10 border-indigo-100 dark:border-indigo-900 bg-indigo-50/50 dark:bg-indigo-950/30">
         <CardHeader>
-          <CardTitle className="text-base text-indigo-700 dark:text-indigo-300">About the NostrMail Protocol</CardTitle>
+          <CardTitle className="text-base text-indigo-700 dark:text-indigo-300">About the Pareto Pro Mail Protocol</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-slate-600 dark:text-slate-400 space-y-2">
           <p>
-            NostrMail is built on a new open Nostr NIP. Newsletters are published as <strong>kind 38973</strong> addressable events.
+            Pareto Pro Mail is built on a new open Nostr NIP. Newsletters are published as <strong>kind 38973</strong> addressable events.
             Issues are <strong>kind 30023</strong> long-form events (NIP-23). Subscriptions use <strong>kind 1</strong> notes tagged
             with <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">nostrmail-subscribe</code>.
           </p>
@@ -272,7 +272,7 @@ function LoggedInDashboard() {
 
 const Index = () => {
   useSeoMeta({
-    title: 'NostrMail — Decentralized Newsletter System',
+    title: 'Pareto Pro Mail — Decentralized Newsletter System',
     description: 'Create and send newsletters using your Nostr identity. Encrypted, decentralized, censorship-resistant.',
   });
 

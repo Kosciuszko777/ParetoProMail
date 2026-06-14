@@ -70,7 +70,7 @@ export default function NewsletterPage() {
   const [copied, setCopied] = useState(false);
 
   useSeoMeta({
-    title: newsletter ? `${newsletter.title} — NostrMail` : 'Newsletter — NostrMail',
+    title: newsletter ? `${newsletter.title} — Pareto Pro Mail` : 'Newsletter — Pareto Pro Mail',
     description: newsletter?.summary,
   });
 

@@ -52,7 +52,7 @@ function IssueRow({ issue }: { issue: NewsletterIssue }) {
 }
 
 export default function AllIssuesPage() {
-  useSeoMeta({ title: 'All Issues — NostrMail' });
+  useSeoMeta({ title: 'All Issues — Pareto Pro Mail' });
   const { user } = useCurrentUser();
   const { data: issues, isLoading } = useAllMyIssues(user?.pubkey ?? '');
 

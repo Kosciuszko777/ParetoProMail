@@ -163,7 +163,7 @@ function NewsletterSubscriberBlock({ newsletterPubkey, slug, title }: { newslett
 }
 
 export default function SubscribersPage() {
-  useSeoMeta({ title: 'Subscribers — NostrMail' });
+  useSeoMeta({ title: 'Subscribers — Pareto Pro Mail' });
 
   const { user } = useCurrentUser();
   const { data: contacts, isLoading: contactsLoading } = useEmailContacts();

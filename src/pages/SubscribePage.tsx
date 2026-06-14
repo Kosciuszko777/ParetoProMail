@@ -30,7 +30,7 @@ export default function SubscribePage() {
   const [subLoading, setSubLoading] = useState(false);
 
   useSeoMeta({
-    title: newsletter ? `Subscribe to ${newsletter.title} — NostrMail` : 'Subscribe — NostrMail',
+    title: newsletter ? `Subscribe to ${newsletter.title} — Pareto Pro Mail` : 'Subscribe — Pareto Pro Mail',
     description: newsletter?.summary,
   });
 

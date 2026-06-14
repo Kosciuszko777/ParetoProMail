@@ -192,7 +192,7 @@ function DispatchCard({ dispatch, onCancel }: { dispatch: MailDispatch; onCancel
 }
 
 export default function ScheduledMailsPage() {
-  useSeoMeta({ title: 'Mail Dispatches — NostrMail' });
+  useSeoMeta({ title: 'Mail Dispatches — Pareto Pro Mail' });
 
   const { user } = useCurrentUser();
   const { dispatches, cancelDispatch, refresh } = useMailDispatches();
@@ -326,7 +326,7 @@ export default function ScheduledMailsPage() {
           <CardContent className="text-sm text-slate-600 dark:text-slate-400 space-y-2">
             <p>
               Scheduled dispatches are stored in your browser's local storage, encrypted with your Nostr identity.
-              When the scheduled time arrives, NostrMail will automatically trigger the send if this tab is open.
+              When the scheduled time arrives, Pareto Pro Mail will automatically trigger the send if this tab is open.
             </p>
             <p>
               Each subscriber receives a <strong>NIP-59 gift wrap</strong> — their copy is individually encrypted
