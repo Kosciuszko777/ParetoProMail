@@ -1,246 +1,140 @@
-# NIP-NN: Nostr Newsletter Protocol (Pareto Pro Mail)
+# Pareto Pro Mail — Nostr Newsletter Protocol
 
-## Abstract
+## Overview
 
-This NIP defines a decentralized, censorship-resistant newsletter and bulk mailing system built entirely on Nostr. It enables any Nostr user to:
+Pareto Pro Mail is a three-layer newsletter architecture built on Nostr:
 
-1. **Publish** a newsletter identity and associate it with their `npub` or a traditional email address
-2. **Compose & send** newsletter issues to subscribers, delivered as encrypted gift-wrapped Nostr events
-3. **Subscribe / unsubscribe** from newsletters publicly via a signed event
-4. **Store** their private email contact list in an encrypted, self-owned replaceable event (NIP-44, encrypt-to-self)
-
-All data is stored on Nostr relays. No central mail server or database is required.
-
----
+1. **Publication (source of truth)** — every issue is a **NIP-23 kind 30023** long-form event. Canonical, censorship-resistant, visible in every NIP-23 client (Habla, Highlighter, Yakihonne). Drafts use **kind 30024**.
+2. **Delivery (reach)** — the same issue fans out to subscribers via Nostr notifications/DMs and optionally via SMTP email. Delivery is layered *on top of* the canonical publication.
+3. **Subscription & growth** — subscriber status is derived from public events and (for paid tiers) Stablezap payment receipts. No separate subscriber database.
 
 ## Event Kinds
 
-| Kind    | Type        | Name                           | Description |
-|---------|-------------|--------------------------------|-------------|
-| `38973` | Addressable | Newsletter Definition          | Newsletter profile / identity published by the author |
-| `13039` | Replaceable | Encrypted Email Contact List   | Author's private email contact list, encrypted with NIP-44 to self |
-
-> Standard Nostr kinds reused:
-> - `kind:30023` (NIP-23) — Newsletter issue content (long-form article per issue)
-> - `kind:1059` (NIP-59) — Gift wrap delivery of an issue to a specific subscriber's npub
-> - `kind:1` — Public subscription announcement (opt-in)
+| Kind    | Type        | Name                        | Description |
+|---------|-------------|-----------------------------|-------------|
+| `35733` | Addressable | Newsletter Config           | Publication identity: title, description, relays, Stablezap/Refstr config |
+| `30023` | Addressable | Published Issue (NIP-23)    | Canonical long-form article (standard, reused) |
+| `30024` | Addressable | Draft Issue (NIP-23)        | Unpublished draft (standard, reused) |
+| `35647` | Addressable | Delivery Record             | Author-private send log, NIP-44 encrypted to self |
+| `13039` | Replaceable | Encrypted Address Book      | Email contacts, NIP-44 encrypted to self |
 
 ---
 
-## Kind 38973 — Newsletter Definition (Addressable)
+## Kind 35733 — Newsletter Config (Addressable)
 
-Published by the newsletter **author**. Identified by `pubkey + kind + d-tag`. Updating this event replaces the previous definition.
-
-### Event Structure
+The author's publication identity. One author may run several newsletters (different `d` tags).
 
 ```json
 {
-  "kind": 38973,
-  "pubkey": "<author-pubkey-hex>",
-  "created_at": "<unix-timestamp>",
+  "kind": 35733,
+  "pubkey": "<author-hex>",
   "tags": [
     ["d", "<newsletter-slug>"],
-    ["title", "My Newsletter Title"],
-    ["summary", "A short description of this newsletter"],
+    ["title", "My Newsletter"],
+    ["description", "A short description"],
     ["image", "https://example.com/banner.jpg"],
-    ["email", "newsletter@example.com"],
-    ["website", "https://example.com/newsletter"],
-    ["lang", "en"],
+    ["relay", "wss://relay.example.com"],
     ["t", "bitcoin"],
-    ["t", "freedom"],
-    ["alt", "Nostr Newsletter: My Newsletter Title"]
+    ["t", "journalism"],
+    ["stablezap", "<offer-naddr>"],
+    ["refstr", "<terms-naddr>"],
+    ["alt", "Pareto Pro Mail Newsletter: My Newsletter"]
   ],
-  "content": "Extended description / about text for this newsletter (markdown supported)",
-  "sig": "<signature>"
+  "content": "",
+  "sig": "<sig>"
 }
 ```
 
 ### Tags
 
-| Tag         | Required | Description |
-|-------------|----------|-------------|
-| `d`         | YES      | URL-safe slug identifying this newsletter (e.g. `my-newsletter`) |
-| `title`     | YES      | Human-readable newsletter name |
-| `summary`   | NO       | Short one-liner description |
-| `image`     | NO       | Banner/logo image URL |
-| `email`     | NO       | Associated email address (for email-bridge delivery) |
-| `website`   | NO       | Associated website / landing page |
-| `lang`      | NO       | BCP-47 language code (default `en`) |
-| `t`         | NO       | Topic/hashtag (repeatable) |
-| `alt`       | YES      | Human-readable fallback (NIP-31 compliance) |
-
-> The `npub` of the author acts as the primary mailing address. Subscribers can address emails to `<npub>@paretomail.example`.
-
----
-
-## Kind 13039 — Encrypted Email Contact List (Replaceable)
-
-A **private, self-encrypted** contact list stored on relays. Only the author can decrypt it (NIP-44 encrypt-to-self: the shared key is derived from `author_privkey × author_pubkey`).
-
-This event stores the author's email subscriber list — people who provided an email address outside of Nostr. Nostr-native subscribers are handled via `kind:1` subscription events (see below).
-
-### Event Structure
-
-```json
-{
-  "kind": 13039,
-  "pubkey": "<author-pubkey-hex>",
-  "created_at": "<unix-timestamp>",
-  "tags": [
-    ["alt", "Encrypted newsletter email contact list"]
-  ],
-  "content": "<NIP-44 encrypted JSON>",
-  "sig": "<signature>"
-}
-```
-
-### Plaintext Content (before encryption)
-
-The `content` field, once decrypted, is a JSON array of contact objects:
-
-```json
-[
-  {
-    "email": "alice@example.com",
-    "name": "Alice",
-    "subscribedAt": 1700000000,
-    "tags": ["vip", "beta-reader"],
-    "npub": "npub1..."
-  },
-  {
-    "email": "bob@example.org",
-    "name": "Bob",
-    "subscribedAt": 1700001000,
-    "tags": []
-  }
-]
-```
-
-Each contact object:
-
-| Field         | Type     | Description |
+| Tag           | Required | Description |
 |---------------|----------|-------------|
-| `email`       | string   | Email address (required) |
-| `name`        | string   | Display name (optional) |
-| `subscribedAt`| number   | Unix timestamp of subscription |
-| `tags`        | string[] | Custom label tags (e.g. `"vip"`, `"segment-A"`) |
-| `npub`        | string   | Associated Nostr npub if known (optional) |
-
-> **Privacy guarantee**: this event's `content` is opaque ciphertext. No relay or third party can read the email addresses. Only the author, holding their private key, can decrypt and use this data.
+| `d`           | YES      | URL-safe slug |
+| `title`       | YES      | Newsletter name |
+| `description` | NO       | Short description |
+| `image`       | NO       | Banner/logo URL |
+| `relay`       | NO       | Default relay(s) for this newsletter (repeatable) |
+| `t`           | NO       | Topic hashtag (repeatable) |
+| `stablezap`   | NO       | Stablezap offer address for paid subscriptions (Phase 4) |
+| `refstr`      | NO       | Refstr terms address for referrals (Phase 4) |
+| `alt`         | YES      | Human-readable fallback |
 
 ---
 
-## Newsletter Issues — Kind 30023 (NIP-23 Long-form Content)
+## Kind 30023 — Published Issue (NIP-23)
 
-Each newsletter **issue** is a standard NIP-23 addressable long-form event. Issues are authored under the newsletter author's pubkey.
+Standard NIP-23 long-form event. The canonical artifact — exists independently of delivery.
 
 ```json
 {
   "kind": 30023,
-  "pubkey": "<author-pubkey-hex>",
+  "pubkey": "<author-hex>",
   "tags": [
-    ["d", "<newsletter-slug>-<issue-number>"],
-    ["title", "Issue #42: The Future of Decentralization"],
-    ["summary", "This week we cover..."],
+    ["d", "<newsletter-slug>-<issue-slug>"],
+    ["title", "Issue Title"],
+    ["summary", "Brief preview..."],
     ["published_at", "1700000000"],
-    ["a", "38973:<pubkey>:<newsletter-slug>"],
+    ["image", "https://example.com/cover.jpg"],
+    ["a", "35733:<author-hex>:<newsletter-slug>"],
     ["t", "bitcoin"],
-    ["alt", "Newsletter issue: The Future of Decentralization"]
+    ["alt", "Newsletter issue: Issue Title"]
   ],
-  "content": "# The Future of Decentralization\n\n...",
-  "sig": "<signature>"
+  "content": "# Issue Title\n\nMarkdown content...",
+  "sig": "<sig>"
 }
 ```
 
-The `a` tag links the issue to its parent Newsletter Definition (`kind:38973`).
+The `a` tag links the issue to its parent newsletter config (`kind 35733`).
+
+Drafts use **kind 30024** with the same structure. Publishing converts a draft to kind 30023.
 
 ---
 
-## Subscription Events — Kind 1 (Public)
+## Kind 13039 — Encrypted Address Book (Replaceable)
 
-A Nostr-native user subscribes to a newsletter by publishing a `kind:1` note with a specific structure:
+Author's private email subscriber list. NIP-44 encrypted to self.
+
+The plaintext JSON is an array of contacts with double-opt-in consent timestamps:
+
+```json
+[
+  { "email": "alice@example.com", "name": "Alice", "subscribedAt": 1700000000, "consentAt": 1700000000, "tags": ["vip"] },
+  { "email": "bob@example.org", "name": "Bob", "subscribedAt": 1700001000, "consentAt": 1700001000, "tags": [] }
+]
+```
+
+**No email is added without recorded consent. No plaintext PII is ever stored unencrypted.**
+
+---
+
+## Kind 35647 — Delivery Record (Addressable, Author-Private)
+
+Per-issue send log, NIP-44 encrypted to self. Used for the author's dashboard.
 
 ```json
 {
-  "kind": 1,
-  "content": "Subscribed to nostr:naddr1...",
-  "tags": [
-    ["a", "38973:<author-pubkey>:<newsletter-slug>", "<relay-hint>"],
-    ["t", "nostrmail-subscribe"]
-  ]
+  "kind": 35647,
+  "tags": [["d", "<issue-slug>"], ["alt", "Pareto Pro Mail delivery record"]],
+  "content": "<NIP-44 encrypted JSON: { nostrDelivered, nostrFailed, emailDelivered, emailFailed, sentAt, channels }>"
 }
 ```
 
-### Unsubscribe
+---
 
-To unsubscribe, the user publishes another `kind:1` event with `t: nostrmail-unsubscribe`:
+## Honest Boundary
 
-```json
-{
-  "kind": 1,
-  "content": "Unsubscribed from nostr:naddr1...",
-  "tags": [
-    ["a", "38973:<author-pubkey>:<newsletter-slug>", "<relay-hint>"],
-    ["t", "nostrmail-unsubscribe"]
-  ]
-}
-```
-
-Clients SHOULD treat the most recent subscription or unsubscription event from a given pubkey as the current state.
+The canonical issue on Nostr is censorship-resistant and self-owned. **Email delivery is standard email after the SMTP bridge** — normal metadata, no end-to-end encryption. We never imply otherwise. Readers who want privacy read via a Nostr client; readers who want convenience get email. The author owns the list either way.
 
 ---
 
-## Sending / Delivery
+## Subscription Model
 
-When the author sends an issue, the client:
-
-1. Fetches all `kind:1` events with `t: nostrmail-subscribe` referencing the newsletter's `a`-tag, filtering out pubkeys with a more recent `t: nostrmail-unsubscribe`.
-2. For each **Nostr subscriber** (known npub):
-   - Wraps the `kind:30023` issue event in a **NIP-59 Gift Wrap** (`kind:1059`) addressed to the subscriber's pubkey.
-   - Publishes the gift wrap to the subscriber's preferred DM relays (kind 10050) if known, else the default relay set.
-3. For each **email subscriber** (from the encrypted contact list):
-   - An optional email bridge service (self-hosted or third-party) reads the plaintext issue and sends a traditional email. The bridge authenticates the author via NIP-42 or NIP-98 HTTP Auth.
-   - Email bridge implementations MUST verify the `kind:30023` event signature before delivery.
-4. The `kind:30023` issue itself is also published publicly to relays (it is unencrypted, publicly readable long-form content, just like a blog post).
+- **Free Nostr subscribers**: npubs who have opted in via a signed event (`t: nostrmail-subscribe`).
+- **Paid subscribers**: derived from Stablezap payment receipts against the newsletter's offer. No subscriber database — status is computed from public receipts.
+- **Email subscribers**: stored in the encrypted address book (kind 13039) with double-opt-in consent.
 
 ---
 
-## Using npub as a Mailing Address
+## Interoperability
 
-Any newsletter can be addressed as:
-
-```
-<npub>@paretomail.example
-```
-
-Or more precisely, using a custom NIP-05-like syntax:
-
-```
-<newsletter-slug>@<nip05-domain>
-```
-
-The resolver maps the slug to the `kind:38973` event and the author's pubkey. The `email` tag on the Newsletter Definition provides an alternative traditional email address for bridge delivery.
-
----
-
-## Privacy Model
-
-| Data                           | Visibility     | Encryption        |
-|-------------------------------|----------------|-------------------|
-| Newsletter definition (title, description) | Public | None |
-| Newsletter issues              | Public          | None (like a blog) |
-| Nostr subscriptions            | Public          | None              |
-| Email contact list             | Private (relay sees ciphertext) | NIP-44 encrypt-to-self |
-| Gift-wrapped deliveries        | Addressed only  | NIP-44 (NIP-59 gift wrap) |
-
----
-
-## Summary of Kind Numbers
-
-| Kind    | Purpose |
-|---------|---------|
-| `38973` | Newsletter Definition (addressable, one per slug per author) |
-| `13039` | Encrypted Email Contact List (replaceable, one per author) |
-| `30023` | Newsletter Issue (standard NIP-23 long-form, reused) |
-| `1059`  | Gift Wrap delivery to Nostr subscribers (standard NIP-59, reused) |
-| `1`     | Subscribe / Unsubscribe announcement (standard, tagged with `nostrmail-subscribe` / `nostrmail-unsubscribe`) |
+Every published issue is a standard NIP-23 event. It resolves by `naddr` and renders in any NIP-23 client — Habla, Highlighter, Yakihonne, or any future client. Pareto Pro Mail adds delivery, subscription, and monetization on top without breaking the canonical artifact.

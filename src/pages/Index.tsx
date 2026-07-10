@@ -1,6 +1,6 @@
 import { useSeoMeta } from '@unhead/react';
 import { Link } from 'react-router-dom';
-import { PenSquare, Rss, Users, Zap, Lock, Globe, Plus, ExternalLink, Settings } from 'lucide-react';
+import { PenLine, Plus, BookOpen, ExternalLink, Settings, Rss, FileText, Shield, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,66 +8,52 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AppLayout } from '@/components/AppLayout';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useMyNewsletters } from '@/hooks/useMyNewsletters';
-import { useNewsletterSubscribers } from '@/hooks/useNewsletterSubscribers';
+import { useNewsletterIssues } from '@/hooks/useNewsletterIssues';
 import { useAuthor } from '@/hooks/useAuthor';
 import { nip19 } from 'nostr-tools';
-import type { NewsletterDefinition } from '@/lib/newsletter';
+import type { Newsletter } from '@/lib/pareto';
 
-function NewsletterCard({ newsletter }: { newsletter: NewsletterDefinition }) {
-  const { data: subscribers } = useNewsletterSubscribers(newsletter.pubkey, newsletter.slug);
+function NewsletterCard({ newsletter }: { newsletter: Newsletter }) {
+  const { data: issues } = useNewsletterIssues(newsletter.pubkey, newsletter.slug);
 
   return (
-    <Card className="group hover:shadow-lg hover:border-indigo-200 dark:hover:border-indigo-800 transition-all duration-200">
-      <CardHeader className="pb-3">
-        {newsletter.image && (
-          <div className="w-full h-28 rounded-lg overflow-hidden mb-3 bg-slate-100 dark:bg-slate-800">
-            <img
-              src={newsletter.image}
-              alt={newsletter.title}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        )}
+    <Card className="group hover:shadow-md transition-all duration-200">
+      {newsletter.image && (
+        <div className="w-full h-32 rounded-t-xl overflow-hidden bg-muted">
+          <img src={newsletter.image} alt={newsletter.title} className="w-full h-full object-cover" />
+        </div>
+      )}
+      <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-lg group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+          <CardTitle className="font-serif text-lg group-hover:text-primary/80 transition-colors">
             {newsletter.title}
           </CardTitle>
-          <Badge variant="secondary" className="shrink-0 text-xs">
-            <Rss className="w-3 h-3 mr-1" />
-            Active
-          </Badge>
         </div>
-        {newsletter.summary && (
-          <CardDescription className="text-sm">{newsletter.summary}</CardDescription>
+        {newsletter.description && (
+          <CardDescription className="text-sm line-clamp-2">{newsletter.description}</CardDescription>
         )}
       </CardHeader>
       <CardContent className="pt-0 space-y-3">
-        <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
           <span className="flex items-center gap-1">
-            <Users className="w-4 h-4" />
-            {subscribers ? `${subscribers.length} subscribers` : '—'}
+            <BookOpen className="w-3.5 h-3.5" />
+            {issues ? `${issues.length} issue${issues.length !== 1 ? 's' : ''}` : '—'}
           </span>
-          {newsletter.email && (
-            <span className="flex items-center gap-1 truncate">
-              <Globe className="w-4 h-4 shrink-0" />
-              <span className="truncate">{newsletter.email}</span>
-            </span>
-          )}
         </div>
 
         {newsletter.topics.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {newsletter.topics.slice(0, 4).map((t) => (
-              <Badge key={t} variant="outline" className="text-xs px-2 py-0">#{t}</Badge>
+              <Badge key={t} variant="outline" className="text-xs px-2 py-0 font-normal">#{t}</Badge>
             ))}
           </div>
         )}
 
         <div className="flex gap-2 pt-1">
-          <Button asChild size="sm" variant="default" className="flex-1 bg-indigo-600 hover:bg-indigo-700">
+          <Button asChild size="sm" className="flex-1">
             <Link to={`/compose?newsletter=${newsletter.slug}`}>
-              <PenSquare className="w-4 h-4 mr-1.5" />
-              New Issue
+              <PenLine className="w-4 h-4 mr-1.5" />
+              Write
             </Link>
           </Button>
           <Button asChild size="sm" variant="outline" className="flex-1">
@@ -87,117 +73,83 @@ function NewsletterCard({ newsletter }: { newsletter: NewsletterDefinition }) {
   );
 }
 
-function HeroSection() {
-  return (
-    <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-700 text-white p-8 md:p-12 mb-10">
-      <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 30% 50%, white 1px, transparent 1px), radial-gradient(circle at 70% 80%, white 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
-      <div className="relative max-w-xl">
-        <div className="flex items-center gap-2 mb-4">
-          <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30">
-            <Zap className="w-3 h-3 mr-1" />
-            Powered by Nostr
-          </Badge>
-        </div>
-        <h1 className="text-3xl md:text-4xl font-bold mb-3 leading-tight">
-          Decentralized Newsletters for Everyone
-        </h1>
-        <p className="text-indigo-100 text-lg mb-6 leading-relaxed">
-          Pareto Pro Mail lets you create, send, and subscribe to newsletters using your Nostr identity.
-          No central server. No email service. Your audience, your keys, your freedom.
-        </p>
-        <div className="flex flex-wrap gap-4 text-sm">
-          {[
-            { icon: Lock, text: 'Email contacts encrypted with your key' },
-            { icon: Globe, text: 'Deliver via Nostr or traditional email' },
-            { icon: Rss, text: 'Subscribe with npub — no email needed' },
-          ].map(({ icon: Icon, text }) => (
-            <div key={text} className="flex items-center gap-1.5 text-indigo-100">
-              <Icon className="w-4 h-4 text-indigo-200" />
-              {text}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function LoggedOutDashboard() {
+function LoggedOutView() {
   return (
     <div>
-      <HeroSection />
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Hero */}
+      <div className="text-center max-w-2xl mx-auto mb-16 pt-8">
+        <h1 className="font-serif text-4xl md:text-5xl font-bold tracking-tight mb-4">
+          Your words, your keys,<br />your audience.
+        </h1>
+        <p className="text-lg text-muted-foreground leading-relaxed mb-8">
+          Pareto Pro Mail is a newsletter engine built on Nostr. Every issue is a signed NIP-23 event
+          — censorship-resistant, portable, and readable in any compatible client. Delivery is layered on top;
+          the publication is yours forever.
+        </p>
+        <p className="text-sm text-muted-foreground">Sign in with Nostr to start writing.</p>
+      </div>
+
+      {/* Three pillars */}
+      <div className="grid sm:grid-cols-3 gap-6 mb-16">
         {[
           {
+            icon: FileText,
+            title: 'Publication',
+            desc: 'Every issue is a NIP-23 long-form event (kind 30023). Canonical, signed, readable in Habla, Highlighter, Yakihonne — no lock-in.',
+          },
+          {
             icon: Rss,
-            title: 'Create Your Newsletter',
-            desc: 'Publish a newsletter identity linked to your Nostr npub. Use it as your mailing address.',
+            title: 'Delivery',
+            desc: 'Fan out to Nostr subscribers via notifications/DMs or to email subscribers via an isolated SMTP bridge. The same issue, two channels.',
           },
           {
-            icon: Lock,
-            title: 'Private by Design',
-            desc: 'Email contacts are encrypted with NIP-44 and stored on decentralized relays. Only you can read them.',
-          },
-          {
-            icon: Users,
-            title: 'Nostr-native Subscriptions',
-            desc: 'Subscribers can opt in using just their npub. No email address required for Nostr users.',
-          },
-          {
-            icon: Globe,
-            title: 'Email Bridge Support',
-            desc: 'Link a traditional email address for subscribers who prefer classic email delivery.',
-          },
-          {
-            icon: PenSquare,
-            title: 'Rich Newsletter Issues',
-            desc: 'Write issues in Markdown, published as NIP-23 long-form events — permanent and censorship-resistant.',
-          },
-          {
-            icon: Zap,
-            title: 'Open Protocol',
-            desc: 'Based on a new Nostr NIP (kind 38973). Any app can implement compatible newsletters.',
+            icon: Shield,
+            title: 'Honest Boundary',
+            desc: 'The canonical issue on Nostr is self-owned. Email delivery is standard email — normal metadata, no E2E. We never pretend otherwise.',
           },
         ].map(({ icon: Icon, title, desc }) => (
-          <Card key={title} className="border-slate-200 dark:border-slate-800">
+          <Card key={title}>
             <CardHeader className="pb-2">
-              <div className="w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center mb-2">
-                <Icon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center mb-2">
+                <Icon className="w-5 h-5 text-accent-foreground" />
               </div>
-              <CardTitle className="text-base">{title}</CardTitle>
+              <CardTitle className="font-serif text-base">{title}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-slate-600 dark:text-slate-400">{desc}</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
             </CardContent>
           </Card>
         ))}
       </div>
-      <Card className="border-dashed mt-8">
-        <CardContent className="py-12 text-center">
-          <p className="text-slate-500 dark:text-slate-400 mb-4">Login with your Nostr account to create and manage newsletters</p>
-          <p className="text-sm text-slate-400 dark:text-slate-500">Use the Login button in the top right to get started</p>
+
+      {/* NIP-23 interop */}
+      <Card className="border-dashed">
+        <CardContent className="py-10 text-center">
+          <p className="text-sm text-muted-foreground max-w-lg mx-auto leading-relaxed">
+            Every published issue resolves by <code className="bg-muted px-1 rounded text-xs">naddr</code> and renders
+            in any NIP-23 client. Pareto Pro Mail adds delivery, subscriptions, and monetization on top
+            — without breaking the canonical artifact.
+          </p>
         </CardContent>
       </Card>
     </div>
   );
 }
 
-function LoggedInDashboard() {
+function LoggedInView() {
   const { user } = useCurrentUser();
   const { data: newsletters, isLoading } = useMyNewsletters();
   const author = useAuthor(user?.pubkey ?? '');
-  const displayName = author.data?.metadata?.name ?? (user?.pubkey ? nip19.npubEncode(user.pubkey).slice(0, 12) + '…' : 'You');
+  const displayName = author.data?.metadata?.name ?? (user?.pubkey ? nip19.npubEncode(user.pubkey).slice(0, 14) + '…' : 'Writer');
 
   return (
     <div>
       <div className="flex items-center justify-between mb-8 gap-4 flex-wrap">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Welcome back, {displayName}
-          </h2>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">Manage your decentralized newsletters</p>
+          <h2 className="font-serif text-2xl font-bold">Welcome, {displayName}</h2>
+          <p className="text-muted-foreground mt-0.5 text-sm">Your newsletters and publications</p>
         </div>
-        <Button asChild className="bg-indigo-600 hover:bg-indigo-700">
+        <Button asChild>
           <Link to="/newsletter/new">
             <Plus className="w-4 h-4 mr-2" />
             New Newsletter
@@ -213,9 +165,7 @@ function LoggedInDashboard() {
                 <Skeleton className="h-4 w-3/4" />
                 <Skeleton className="h-3 w-1/2" />
               </CardHeader>
-              <CardContent>
-                <Skeleton className="h-8 w-full" />
-              </CardContent>
+              <CardContent><Skeleton className="h-8 w-full" /></CardContent>
             </Card>
           ))}
         </div>
@@ -228,14 +178,12 @@ function LoggedInDashboard() {
       ) : (
         <Card className="border-dashed">
           <CardContent className="py-16 text-center">
-            <div className="w-14 h-14 rounded-full bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center mx-auto mb-4">
-              <Rss className="w-7 h-7 text-indigo-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2">No newsletters yet</h3>
-            <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto mb-6">
-              Create your first newsletter and start building your decentralized audience on Nostr.
+            <PenLine className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+            <h3 className="font-serif text-lg font-semibold mb-2">No newsletters yet</h3>
+            <p className="text-muted-foreground max-w-sm mx-auto mb-6 text-sm">
+              Create your first newsletter and start publishing NIP-23 issues to the world.
             </p>
-            <Button asChild className="bg-indigo-600 hover:bg-indigo-700">
+            <Button asChild>
               <Link to="/newsletter/new">
                 <Plus className="w-4 h-4 mr-2" />
                 Create Newsletter
@@ -245,24 +193,22 @@ function LoggedInDashboard() {
         </Card>
       )}
 
-      {/* NIP info card */}
-      <Card className="mt-10 border-indigo-100 dark:border-indigo-900 bg-indigo-50/50 dark:bg-indigo-950/30">
+      {/* Protocol info */}
+      <Card className="mt-12 bg-accent/30">
         <CardHeader>
-          <CardTitle className="text-base text-indigo-700 dark:text-indigo-300">About the Pareto Pro Mail Protocol</CardTitle>
+          <CardTitle className="font-serif text-sm text-muted-foreground">How it works</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-slate-600 dark:text-slate-400 space-y-2">
+        <CardContent className="text-sm text-muted-foreground space-y-2 leading-relaxed">
           <p>
-            Pareto Pro Mail is built on a new open Nostr NIP. Newsletters are published as <strong>kind 38973</strong> addressable events.
-            Issues are <strong>kind 30023</strong> long-form events (NIP-23). Subscriptions use <strong>kind 1</strong> notes tagged
-            with <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">nostrmail-subscribe</code>.
+            Newsletters are <strong className="text-foreground">kind 35733</strong> config events.
+            Issues are standard <strong className="text-foreground">NIP-23 kind 30023</strong> long-form events
+            — readable in Habla, Highlighter, Yakihonne, and any NIP-23 client.
+            Drafts autosave as <strong className="text-foreground">kind 30024</strong>.
           </p>
           <p>
-            Email contacts are stored as <strong>kind 13039</strong> replaceable events, encrypted with{' '}
-            <strong>NIP-44</strong> (encrypt-to-self). No relay or third party can read your subscriber list.
-          </p>
-          <p>
-            Deliveries to Nostr subscribers use <strong>NIP-59 gift wraps</strong>. Traditional email delivery is
-            handled by optional bridge services that verify Nostr event signatures.
+            Subscriber state is derived from public events and Stablezap receipts — no database.
+            Email contacts are <strong className="text-foreground">NIP-44 encrypted to self</strong> (kind 13039).
+            The SMTP bridge is isolated and optional.
           </p>
         </CardContent>
       </Card>
@@ -272,15 +218,15 @@ function LoggedInDashboard() {
 
 const Index = () => {
   useSeoMeta({
-    title: 'Pareto Pro Mail — Decentralized Newsletter System',
-    description: 'Create and send newsletters using your Nostr identity. Encrypted, decentralized, censorship-resistant.',
+    title: 'Pareto Pro Mail — Decentralized Newsletter Engine',
+    description: 'Publish NIP-23 newsletters on Nostr. Censorship-resistant, self-owned, delivered everywhere.',
   });
 
   const { user } = useCurrentUser();
 
   return (
     <AppLayout>
-      {user ? <LoggedInDashboard /> : <LoggedOutDashboard />}
+      {user ? <LoggedInView /> : <LoggedOutView />}
     </AppLayout>
   );
 };

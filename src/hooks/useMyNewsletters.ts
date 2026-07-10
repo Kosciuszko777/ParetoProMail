@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNostr } from '@nostrify/react';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { NEWSLETTER_KIND, parseNewsletterDefinition, type NewsletterDefinition } from '@/lib/newsletter';
+import { NEWSLETTER_CONFIG_KIND, parseNewsletter, type Newsletter } from '@/lib/pareto';
 
 export function useMyNewsletters() {
   const { nostr } = useNostr();
@@ -13,12 +13,12 @@ export function useMyNewsletters() {
     queryFn: async (ctx) => {
       if (!user?.pubkey) return [];
       const events = await nostr.query(
-        [{ kinds: [NEWSLETTER_KIND], authors: [user.pubkey], limit: 50 }],
-        { signal: ctx.signal }
+        [{ kinds: [NEWSLETTER_CONFIG_KIND], authors: [user.pubkey], limit: 50 }],
+        { signal: ctx.signal },
       );
       return events
-        .map(parseNewsletterDefinition)
-        .filter((n): n is NewsletterDefinition => n !== null)
+        .map(parseNewsletter)
+        .filter((n): n is Newsletter => n !== null)
         .sort((a, b) => b.createdAt - a.createdAt);
     },
     staleTime: 30_000,
