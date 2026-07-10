@@ -1,6 +1,6 @@
 import { useSeoMeta } from '@unhead/react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Calendar, ExternalLink, PenLine } from 'lucide-react';
+import { BookOpen, Calendar, PenLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,43 +8,38 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AppLayout } from '@/components/AppLayout';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAllMyIssues } from '@/hooks/useNewsletterIssues';
-import { nip19 } from 'nostr-tools';
-import { ISSUE_KIND, type Issue } from '@/lib/pareto';
+import type { Issue } from '@/lib/pareto';
 
 function IssueRow({ issue }: { issue: Issue }) {
   const date = new Date(issue.publishedAt * 1000).toLocaleDateString('en-US', {
     year: 'numeric', month: 'short', day: 'numeric',
   });
-  const naddr = nip19.naddrEncode({ kind: ISSUE_KIND, pubkey: issue.pubkey, identifier: issue.slug });
 
   return (
-    <Card className="hover:shadow-sm transition-all">
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <CardTitle className="font-serif text-base truncate">{issue.title}</CardTitle>
-            {issue.summary && <CardDescription className="text-sm mt-0.5 line-clamp-2">{issue.summary}</CardDescription>}
+    <Link to={`/issue/${issue.pubkey}/${issue.slug}`} className="block group">
+      <Card className="hover:shadow-sm transition-all">
+        <CardHeader className="pb-2">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <CardTitle className="font-serif text-base truncate group-hover:text-primary/80 transition-colors">{issue.title}</CardTitle>
+              {issue.summary && <CardDescription className="text-sm mt-0.5 line-clamp-2">{issue.summary}</CardDescription>}
+            </div>
+            <Badge variant="secondary" className="shrink-0 text-xs">Read</Badge>
           </div>
-          <Button asChild variant="outline" size="sm" className="shrink-0 h-8">
-            <a href={`https://njump.me/${naddr}`} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="w-3.5 h-3.5 mr-1" />
-              Read
-            </a>
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <div className="flex items-center gap-3 flex-wrap">
-          <span className="flex items-center gap-1 text-sm text-muted-foreground">
-            <Calendar className="w-3.5 h-3.5" />{date}
-          </span>
-          {issue.newsletterSlug && <Badge variant="secondary" className="text-xs font-normal">{issue.newsletterSlug}</Badge>}
-          {issue.topics.slice(0, 3).map((t) => (
-            <Badge key={t} variant="outline" className="text-xs font-normal">#{t}</Badge>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="flex items-center gap-1 text-sm text-muted-foreground">
+              <Calendar className="w-3.5 h-3.5" />{date}
+            </span>
+            {issue.newsletterSlug && <Badge variant="secondary" className="text-xs font-normal">{issue.newsletterSlug}</Badge>}
+            {issue.topics.slice(0, 3).map((t) => (
+              <Badge key={t} variant="outline" className="text-xs font-normal">#{t}</Badge>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
 

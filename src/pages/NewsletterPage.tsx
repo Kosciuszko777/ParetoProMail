@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useSeoMeta } from '@unhead/react';
-import { ArrowLeft, BookOpen, PenLine, Calendar, ExternalLink, Settings, Users, Loader2, Check, UserPlus, UserMinus } from 'lucide-react';
+import { ArrowLeft, PenLine, Calendar, Settings, Users, Loader2, UserPlus, UserMinus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,36 +17,35 @@ import { useAuthor } from '@/hooks/useAuthor';
 import { useToast } from '@/hooks/useToast';
 import { useQueryClient } from '@tanstack/react-query';
 import { nip19 } from 'nostr-tools';
-import { NEWSLETTER_CONFIG_KIND, ISSUE_KIND, SUBSCRIBE_TAG, UNSUBSCRIBE_TAG, newsletterATag, type Issue } from '@/lib/pareto';
+import { NEWSLETTER_CONFIG_KIND, SUBSCRIBE_TAG, UNSUBSCRIBE_TAG, newsletterATag, type Issue } from '@/lib/pareto';
 
 function IssueCard({ issue }: { issue: Issue }) {
   const date = new Date(issue.publishedAt * 1000).toLocaleDateString('en-US', {
     year: 'numeric', month: 'long', day: 'numeric',
   });
-  const naddr = nip19.naddrEncode({ kind: ISSUE_KIND, pubkey: issue.pubkey, identifier: issue.slug });
+  const words = issue.content.trim().split(/\s+/).length;
+  const readMin = Math.max(1, Math.round(words / 230));
 
   return (
-    <Card className="hover:shadow-sm transition-all">
-      {issue.image && (
-        <div className="w-full h-36 overflow-hidden rounded-t-xl bg-muted">
-          <img src={issue.image} alt={issue.title} className="w-full h-full object-cover" />
-        </div>
-      )}
-      <CardHeader className="pb-2">
-        <CardTitle className="font-serif text-base leading-snug">{issue.title}</CardTitle>
-        {issue.summary && <CardDescription className="text-sm">{issue.summary}</CardDescription>}
-      </CardHeader>
-      <CardContent className="pt-0 space-y-3">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Calendar className="w-4 h-4" />{date}
-        </div>
-        <Button asChild variant="outline" size="sm" className="w-full">
-          <a href={`https://njump.me/${naddr}`} target="_blank" rel="noopener noreferrer">
-            Read on Nostr <ExternalLink className="w-3.5 h-3.5 ml-1.5" />
-          </a>
-        </Button>
-      </CardContent>
-    </Card>
+    <Link to={`/issue/${issue.pubkey}/${issue.slug}`} className="block group">
+      <Card className="hover:shadow-md transition-all duration-200">
+        {issue.image && (
+          <div className="w-full h-36 overflow-hidden rounded-t-xl bg-muted">
+            <img src={issue.image} alt={issue.title} className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300" />
+          </div>
+        )}
+        <CardHeader className="pb-2">
+          <CardTitle className="font-serif text-base leading-snug group-hover:text-primary/80 transition-colors">{issue.title}</CardTitle>
+          {issue.summary && <CardDescription className="text-sm line-clamp-2">{issue.summary}</CardDescription>}
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{date}</span>
+            <span>{readMin} min read</span>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
 

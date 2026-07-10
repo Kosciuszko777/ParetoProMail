@@ -1,8 +1,8 @@
 import { useSeoMeta } from '@unhead/react';
 import { Link } from 'react-router-dom';
-import { FileText, Calendar, PenLine } from 'lucide-react';
+import { FileText, Calendar, PenLine, Edit3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AppLayout } from '@/components/AppLayout';
@@ -14,34 +14,38 @@ function DraftRow({ draft }: { draft: Issue }) {
   const date = new Date(draft.publishedAt * 1000).toLocaleDateString('en-US', {
     year: 'numeric', month: 'short', day: 'numeric',
   });
+  const editUrl = `/compose?draft=${encodeURIComponent(draft.slug)}&newsletter=${encodeURIComponent(draft.newsletterSlug)}`;
 
   return (
-    <Card className="hover:shadow-sm transition-all">
-      <CardContent className="py-4 px-5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <h3 className="font-serif font-semibold text-sm truncate">{draft.title}</h3>
-            {draft.summary && (
-              <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{draft.summary}</p>
-            )}
-            <div className="flex items-center gap-3 mt-1.5">
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Calendar className="w-3 h-3" />
-                {date}
-              </span>
-              {draft.newsletterSlug && (
-                <Badge variant="secondary" className="text-xs font-normal">{draft.newsletterSlug}</Badge>
+    <Link to={editUrl} className="block group">
+      <Card className="hover:shadow-sm transition-all">
+        <CardContent className="py-4 px-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-serif font-semibold text-sm truncate group-hover:text-primary/80 transition-colors">{draft.title}</h3>
+              {draft.summary && (
+                <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{draft.summary}</p>
               )}
+              <div className="flex items-center gap-3 mt-1.5">
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Calendar className="w-3 h-3" />
+                  {date}
+                </span>
+                {draft.newsletterSlug && (
+                  <Badge variant="secondary" className="text-xs font-normal">{draft.newsletterSlug}</Badge>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-800">
+                Draft
+              </Badge>
+              <Edit3 className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
             </div>
           </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-800">
-              Draft
-            </Badge>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
 

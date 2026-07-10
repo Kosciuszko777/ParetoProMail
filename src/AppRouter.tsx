@@ -9,6 +9,7 @@ import NewsletterSettingsPage from "./pages/NewsletterSettingsPage";
 import AllIssuesPage from "./pages/AllIssuesPage";
 import DraftsPage from "./pages/DraftsPage";
 import SubscribersPage from "./pages/SubscribersPage";
+import IssuePage from "./pages/IssuePage";
 import { NIP19Page } from "./pages/NIP19Page";
 import NotFound from "./pages/NotFound";
 
@@ -25,6 +26,7 @@ export function AppRouter() {
         <Route path="/issues" element={<AllIssuesPage />} />
         <Route path="/drafts" element={<DraftsPage />} />
         <Route path="/subscribers" element={<SubscribersPage />} />
+        <Route path="/issue/:pubkey/:slug" element={<IssuePage />} />
         {/* NIP-19 route for npub1, note1, naddr1, nevent1, nprofile1 */}
         <Route path="/:nip19" element={<NIP19Page />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useSeoMeta } from '@unhead/react';
 import {
   ArrowLeft, PenLine, Loader2, Eye, EyeOff, Save, Send, ExternalLink, CheckCircle2,
-  FileText, Copy, Rss,
+  FileText, Copy,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useNostrPublish } from '@/hooks/useNostrPublish';
 import { useMyNewsletters } from '@/hooks/useMyNewsletters';
+import { useDraft } from '@/hooks/useIssue';
 import { useToast } from '@/hooks/useToast';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -25,20 +26,7 @@ import {
 import { nip19 } from 'nostr-tools';
 import { cn } from '@/lib/utils';
 import { DeliveryPanel } from '@/components/DeliveryPanel';
-
-// ─── Markdown Renderer (safe: only transforms escaped content) ──────────────
-function renderMarkdown(md: string): string {
-  const esc = md.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  return esc
-    .replace(/^### (.+)$/gm, '<h3 class="text-lg font-serif font-semibold mt-6 mb-2">$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2 class="text-xl font-serif font-bold mt-8 mb-2">$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1 class="text-2xl font-serif font-bold mt-8 mb-3">$1</h1>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/^---$/gm, '<hr class="my-6 border-border" />')
-    .replace(/^- (.+)$/gm, '<li class="ml-4">$1</li>')
-    .replace(/\n\n/g, '</p><p class="mb-4 leading-relaxed">');
-}
+import { renderMarkdown } from '@/lib/markdown';
 
 export default function ComposeIssue() {
   useSeoMeta({ title: 'Compose Issue — Pareto Pro Mail' });
@@ -46,12 +34,16 @@ export default function ComposeIssue() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const defaultNl = searchParams.get('newsletter') ?? '';
+  const draftParam = searchParams.get('draft') ?? '';
 
   const { user } = useCurrentUser();
   const { mutateAsync: publish } = useNostrPublish();
   const { data: newsletters } = useMyNewsletters();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Load existing draft if ?draft=slug is present
+  const { data: loadedDraft } = useDraft(user?.pubkey ?? '', draftParam);
 
   const [selectedNl, setSelectedNl] = useState(defaultNl);
   const [title, setTitle] = useState('');
@@ -64,6 +56,22 @@ export default function ComposeIssue() {
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [publishedNaddr, setPublishedNaddr] = useState<string | null>(null);
+  const [draftLoaded, setDraftLoaded] = useState(false);
+
+  // Load draft data into form
+  useEffect(() => {
+    if (loadedDraft && !draftLoaded) {
+      setTitle(loadedDraft.title);
+      setSummary(loadedDraft.summary ?? '');
+      setContent(loadedDraft.content);
+      setImage(loadedDraft.image ?? '');
+      setTopicsInput(loadedDraft.topics.join(', '));
+      if (loadedDraft.newsletterSlug) {
+        setSelectedNl(loadedDraft.newsletterSlug);
+      }
+      setDraftLoaded(true);
+    }
+  }, [loadedDraft, draftLoaded]);
 
   // Auto-select first newsletter
   useEffect(() => {
@@ -76,12 +84,15 @@ export default function ComposeIssue() {
   const chosenNl = newsletters?.find((n) => n.slug === selectedNl);
 
   // ── Draft autosave (every 30 s while typing) ──────────────────────────────
-  const draftSlugRef = useRef<string>('');
+  const draftSlugRef = useRef<string>(draftParam || '');
   useEffect(() => {
-    if (title && selectedNl) {
+    // If editing an existing draft, keep its slug; otherwise generate one
+    if (draftParam) {
+      draftSlugRef.current = draftParam;
+    } else if (title && selectedNl) {
       draftSlugRef.current = `draft-${makeIssueSlug(selectedNl, title)}`;
     }
-  }, [title, selectedNl]);
+  }, [title, selectedNl, draftParam]);
 
   const saveDraft = useCallback(async () => {
     if (!user || !chosenNl || !title.trim() || !content.trim()) return;
@@ -139,6 +150,7 @@ export default function ComposeIssue() {
 
       queryClient.invalidateQueries({ queryKey: ['newsletter-issues'] });
       queryClient.invalidateQueries({ queryKey: ['all-my-issues'] });
+      queryClient.invalidateQueries({ queryKey: ['all-my-drafts'] });
 
       toast({
         title: 'Published!',
@@ -271,9 +283,11 @@ export default function ComposeIssue() {
         <div className="flex items-center justify-between gap-4 mb-8 flex-wrap">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" asChild>
-              <Link to="/"><ArrowLeft className="w-4 h-4 mr-1" />Back</Link>
+              <Link to={draftParam ? '/drafts' : '/'}><ArrowLeft className="w-4 h-4 mr-1" />{draftParam ? 'Drafts' : 'Back'}</Link>
             </Button>
-            <h1 className="font-serif text-2xl font-bold">Compose</h1>
+            <h1 className="font-serif text-2xl font-bold">
+              {draftParam ? 'Edit Draft' : 'Compose'}
+            </h1>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             {saving && <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving draft…</>}
