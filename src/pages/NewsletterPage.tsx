@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useSeoMeta } from '@unhead/react';
-import { ArrowLeft, BookOpen, PenLine, Calendar, ExternalLink, Settings } from 'lucide-react';
+import { ArrowLeft, BookOpen, PenLine, Calendar, ExternalLink, Settings, Users, Loader2, Check, UserPlus, UserMinus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,10 +10,14 @@ import { Separator } from '@/components/ui/separator';
 import { AppLayout } from '@/components/AppLayout';
 import { useNewsletter } from '@/hooks/useNewsletter';
 import { useNewsletterIssues } from '@/hooks/useNewsletterIssues';
+import { useNewsletterSubscribers, useMySubscriptionState } from '@/hooks/useNewsletterSubscribers';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useNostrPublish } from '@/hooks/useNostrPublish';
 import { useAuthor } from '@/hooks/useAuthor';
+import { useToast } from '@/hooks/useToast';
+import { useQueryClient } from '@tanstack/react-query';
 import { nip19 } from 'nostr-tools';
-import { NEWSLETTER_CONFIG_KIND, ISSUE_KIND, type Issue } from '@/lib/pareto';
+import { NEWSLETTER_CONFIG_KIND, ISSUE_KIND, SUBSCRIBE_TAG, UNSUBSCRIBE_TAG, newsletterATag, type Issue } from '@/lib/pareto';
 
 function IssueCard({ issue }: { issue: Issue }) {
   const date = new Date(issue.publishedAt * 1000).toLocaleDateString('en-US', {
@@ -49,15 +54,63 @@ export default function NewsletterPage() {
   const { pubkey = '', slug = '' } = useParams<{ pubkey: string; slug: string }>();
   const { data: newsletter, isLoading } = useNewsletter(pubkey, slug);
   const { data: issues, isLoading: issuesLoading } = useNewsletterIssues(pubkey, slug);
+  const { data: subscribers } = useNewsletterSubscribers(pubkey, slug);
   const { user } = useCurrentUser();
+  const { data: isSubscribed } = useMySubscriptionState(pubkey, slug, user?.pubkey);
+  const { mutateAsync: publish } = useNostrPublish();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const author = useAuthor(pubkey);
   const authorName = author.data?.metadata?.name ?? nip19.npubEncode(pubkey).slice(0, 16) + '…';
   const isOwner = user?.pubkey === pubkey;
+  const [subLoading, setSubLoading] = useState(false);
 
   useSeoMeta({
     title: newsletter ? `${newsletter.title} — Pareto Pro Mail` : 'Newsletter — Pareto Pro Mail',
     description: newsletter?.description,
   });
+
+  const aTag = newsletterATag(pubkey, slug);
+
+  async function handleSubscribe() {
+    if (!user) return;
+    setSubLoading(true);
+    try {
+      const nlNaddr = nip19.naddrEncode({ kind: NEWSLETTER_CONFIG_KIND, pubkey, identifier: slug });
+      await publish({
+        kind: 1,
+        content: `Subscribed to nostr:${nlNaddr}`,
+        tags: [['a', aTag], ['t', SUBSCRIBE_TAG]],
+      });
+      toast({ title: 'Subscribed!', description: `You'll be notified when new issues are published.` });
+      queryClient.invalidateQueries({ queryKey: ['my-subscription', pubkey, slug, user.pubkey] });
+      queryClient.invalidateQueries({ queryKey: ['newsletter-subscribers', pubkey, slug] });
+    } catch (err) {
+      toast({ title: 'Error', description: String(err), variant: 'destructive' });
+    } finally {
+      setSubLoading(false);
+    }
+  }
+
+  async function handleUnsubscribe() {
+    if (!user) return;
+    setSubLoading(true);
+    try {
+      const nlNaddr = nip19.naddrEncode({ kind: NEWSLETTER_CONFIG_KIND, pubkey, identifier: slug });
+      await publish({
+        kind: 1,
+        content: `Unsubscribed from nostr:${nlNaddr}`,
+        tags: [['a', aTag], ['t', UNSUBSCRIBE_TAG]],
+      });
+      toast({ title: 'Unsubscribed' });
+      queryClient.invalidateQueries({ queryKey: ['my-subscription', pubkey, slug, user.pubkey] });
+      queryClient.invalidateQueries({ queryKey: ['newsletter-subscribers', pubkey, slug] });
+    } catch (err) {
+      toast({ title: 'Error', description: String(err), variant: 'destructive' });
+    } finally {
+      setSubLoading(false);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -107,7 +160,13 @@ export default function NewsletterPage() {
               {newsletter.description && (
                 <p className="text-muted-foreground text-lg">{newsletter.description}</p>
               )}
-              <p className="text-sm text-muted-foreground mt-2">by {authorName}</p>
+              <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
+                <span>by {authorName}</span>
+                <span className="flex items-center gap-1">
+                  <Users className="w-3.5 h-3.5" />
+                  {subscribers?.length ?? 0} subscriber{(subscribers?.length ?? 0) !== 1 ? 's' : ''}
+                </span>
+              </div>
               {newsletter.topics.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-3">
                   {newsletter.topics.map((t) => (
@@ -116,16 +175,41 @@ export default function NewsletterPage() {
                 </div>
               )}
             </div>
-            {isOwner && (
-              <div className="flex gap-2 shrink-0">
-                <Button asChild size="sm">
-                  <Link to={`/compose?newsletter=${slug}`}><PenLine className="w-4 h-4 mr-1.5" />Write</Link>
-                </Button>
-                <Button asChild size="sm" variant="outline">
-                  <Link to={`/newsletter/${pubkey}/${slug}/settings`}><Settings className="w-4 h-4" /></Link>
-                </Button>
-              </div>
-            )}
+            <div className="flex flex-col gap-2 shrink-0">
+              {isOwner ? (
+                <>
+                  <Button asChild size="sm">
+                    <Link to={`/compose?newsletter=${slug}`}><PenLine className="w-4 h-4 mr-1.5" />Write</Link>
+                  </Button>
+                  <Button asChild size="sm" variant="outline">
+                    <Link to={`/newsletter/${pubkey}/${slug}/settings`}><Settings className="w-4 h-4 mr-1.5" />Settings</Link>
+                  </Button>
+                </>
+              ) : user ? (
+                isSubscribed ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleUnsubscribe}
+                    disabled={subLoading}
+                  >
+                    {subLoading ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <UserMinus className="w-4 h-4 mr-1.5" />}
+                    Unsubscribe
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    onClick={handleSubscribe}
+                    disabled={subLoading}
+                  >
+                    {subLoading ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <UserPlus className="w-4 h-4 mr-1.5" />}
+                    Subscribe
+                  </Button>
+                )
+              ) : (
+                <p className="text-xs text-muted-foreground">Sign in to subscribe</p>
+              )}
+            </div>
           </div>
         </div>
 
@@ -134,7 +218,7 @@ export default function NewsletterPage() {
         {/* Issues */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="font-serif text-xl font-bold">Issues</h2>
-          <span className="text-sm text-muted-foreground">{issues?.length ?? 0} published</span>
+          <span className="text-sm text-muted-foreground tabular-nums">{issues?.length ?? 0} published</span>
         </div>
 
         {issuesLoading ? (
@@ -157,7 +241,7 @@ export default function NewsletterPage() {
           </Card>
         )}
 
-        {/* naddr footer */}
+        {/* naddr */}
         <Card className="mt-10">
           <CardHeader>
             <CardTitle className="text-xs text-muted-foreground uppercase tracking-wide">Nostr Address</CardTitle>

@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { PenLine, BookOpen, Rss, FileText, Moon, Sun } from 'lucide-react';
+import { PenLine, BookOpen, Rss, FileText, Moon, Sun, Users } from 'lucide-react';
 import { LoginArea } from '@/components/auth/LoginArea';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -14,6 +14,7 @@ const navItems = [
   { to: '/compose', label: 'Write', icon: PenLine },
   { to: '/issues', label: 'Issues', icon: BookOpen },
   { to: '/drafts', label: 'Drafts', icon: FileText },
+  { to: '/subscribers', label: 'Subscribers', icon: Users },
 ];
 
 export function AppLayout({ children }: AppLayoutProps) {

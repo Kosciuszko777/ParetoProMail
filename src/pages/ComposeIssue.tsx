@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useSeoMeta } from '@unhead/react';
 import {
   ArrowLeft, PenLine, Loader2, Eye, EyeOff, Save, Send, ExternalLink, CheckCircle2,
-  FileText, Copy,
+  FileText, Copy, Rss,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +24,7 @@ import {
 } from '@/lib/pareto';
 import { nip19 } from 'nostr-tools';
 import { cn } from '@/lib/utils';
+import { DeliveryPanel } from '@/components/DeliveryPanel';
 
 // ─── Markdown Renderer (safe: only transforms escaped content) ──────────────
 function renderMarkdown(md: string): string {
@@ -225,6 +226,18 @@ export default function ComposeIssue() {
               ))}
             </div>
           </div>
+
+          {/* Delivery Panel */}
+          {chosenNl && (
+            <div className="mb-6">
+              <DeliveryPanel
+                issueNaddr={publishedNaddr}
+                issueTitle={title}
+                newsletterPubkey={user.pubkey}
+                newsletterSlug={chosenNl.slug}
+              />
+            </div>
+          )}
 
           {/* Actions */}
           <Separator className="my-6" />
