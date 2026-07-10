@@ -22,6 +22,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { nip19 } from 'nostr-tools';
 import { NEWSLETTER_CONFIG_KIND, ISSUE_KIND, SUBSCRIBE_TAG, UNSUBSCRIBE_TAG, newsletterATag } from '@/lib/pareto';
 import { renderMarkdown } from '@/lib/markdown';
+import { ZapDialog } from '@/components/ZapDialog';
+import { Paywall } from '@/components/Paywall';
+import { usePaidStatus } from '@/hooks/usePaidStatus';
+import { Zap } from 'lucide-react';
 
 function ReadingTime({ content }: { content: string }) {
   const words = content.trim().split(/\s+/).length;
@@ -64,6 +68,17 @@ export default function IssuePage() {
 
   const isOwner = user?.pubkey === pubkey;
   const aTag = newsletterATag(pubkey, nlSlug);
+
+  // Check paid status
+  const requiredSats = newsletter?.paidSats;
+  const { totalSats: userZappedSats, isPaid, isLoading: paidLoading } = usePaidStatus(
+    pubkey,
+    user?.pubkey,
+    requiredSats,
+  );
+
+  // Content is gated if: issue is paid-only, newsletter has a paid tier, user is not the owner, and user hasn't paid
+  const isGated = !!(issue?.paidOnly && requiredSats && requiredSats > 0 && !isOwner && !isPaid);
 
   async function handleSubscribe() {
     if (!user || !nlSlug) return;
@@ -184,9 +199,17 @@ export default function IssuePage() {
 
         {/* Header */}
         <header className="mb-8">
-          <h1 className="font-serif text-3xl md:text-4xl font-bold leading-tight mb-3">
-            {issue.title}
-          </h1>
+          <div className="flex items-start gap-3 mb-3">
+            <h1 className="font-serif text-3xl md:text-4xl font-bold leading-tight flex-1">
+              {issue.title}
+            </h1>
+            {issue.paidOnly && (
+              <Badge variant="outline" className="shrink-0 mt-2 bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-700">
+                <Zap className="w-3 h-3 mr-1" />
+                Paid
+              </Badge>
+            )}
+          </div>
 
           {issue.summary && (
             <p className="text-lg text-muted-foreground leading-relaxed mb-4">
@@ -242,17 +265,27 @@ export default function IssuePage() {
 
         <Separator className="mb-8" />
 
-        {/* Article content */}
-        <div
-          className="prose-content font-sans text-[15px] md:text-base leading-relaxed text-foreground"
-          dangerouslySetInnerHTML={{ __html: renderMarkdown(issue.content) }}
-        />
+        {/* Article content — gated if paid-only */}
+        {isGated && issue.event ? (
+          <Paywall
+            event={issue.event}
+            newsletterTitle={newsletter?.title ?? 'this newsletter'}
+            requiredSats={requiredSats ?? 0}
+            currentSats={userZappedSats}
+            isLoading={paidLoading}
+          />
+        ) : (
+          <div
+            className="prose-content font-sans text-[15px] md:text-base leading-relaxed text-foreground"
+            dangerouslySetInnerHTML={{ __html: renderMarkdown(issue.content) }}
+          />
+        )}
 
         <Separator className="my-10" />
 
         {/* Footer: subscribe CTA + share */}
         <footer className="space-y-6">
-          {/* Subscribe CTA */}
+          {/* Subscribe CTA + Zap */}
           {newsletter && !isOwner && (
             <Card className="bg-accent/30">
               <CardContent className="py-6 px-6">
@@ -265,30 +298,40 @@ export default function IssuePage() {
                       Subscribe to <strong className="text-foreground">{newsletter.title}</strong> and never miss an update.
                     </p>
                   </div>
-                  {user ? (
-                    isSubscribed ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleUnsubscribe}
-                        disabled={subLoading}
-                      >
-                        {subLoading ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <UserMinus className="w-4 h-4 mr-1.5" />}
-                        Unsubscribe
-                      </Button>
+                  <div className="flex items-center gap-2">
+                    {issue.event && (
+                      <ZapDialog target={issue.event}>
+                        <Button variant="outline" size="sm">
+                          <Zap className="w-4 h-4 mr-1.5" />
+                          Zap
+                        </Button>
+                      </ZapDialog>
+                    )}
+                    {user ? (
+                      isSubscribed ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleUnsubscribe}
+                          disabled={subLoading}
+                        >
+                          {subLoading ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <UserMinus className="w-4 h-4 mr-1.5" />}
+                          Unsubscribe
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={handleSubscribe}
+                          disabled={subLoading}
+                        >
+                          {subLoading ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <UserPlus className="w-4 h-4 mr-1.5" />}
+                          Subscribe
+                        </Button>
+                      )
                     ) : (
-                      <Button
-                        size="sm"
-                        onClick={handleSubscribe}
-                        disabled={subLoading}
-                      >
-                        {subLoading ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <UserPlus className="w-4 h-4 mr-1.5" />}
-                        Subscribe
-                      </Button>
-                    )
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Sign in to subscribe</p>
-                  )}
+                      <p className="text-sm text-muted-foreground">Sign in to subscribe</p>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>

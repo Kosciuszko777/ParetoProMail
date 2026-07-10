@@ -325,11 +325,10 @@ export function DeliveryPanel({
 
           <Separator />
 
-          {/* Phase 3 placeholder */}
           <div className="text-xs text-muted-foreground leading-relaxed">
-            <strong className="text-foreground">Phase 3 — SMTP Bridge:</strong> Email delivery to non-Nostr
-            subscribers will be available when you configure your own SMTP provider. The canonical issue on Nostr
-            remains the owned version; email is standard email after the bridge — normal metadata, no E2E.
+            <strong className="text-foreground">Honest boundary:</strong> The canonical issue on Nostr is censorship-resistant
+            and self-owned. Delivery is layered on top — standard Nostr events. Both paid and free subscribers
+            receive notifications; content gating is enforced at the reader level via zap receipts.
           </div>
         </CardContent>
       )}

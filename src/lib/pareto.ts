@@ -43,9 +43,11 @@ export interface Newsletter {
   description?: string;
   image?: string;
   defaultRelays: string[];
-  /** Stablezap offer address for paid tiers (Phase 4) */
+  /** Minimum zap amount (in sats) for paid subscription */
+  paidSats?: number;
+  /** Stablezap offer address for paid tiers */
   stablezapOffer?: string;
-  /** Refstr terms address (Phase 4) */
+  /** Refstr terms address */
   refstrTerms?: string;
   topics: string[];
   createdAt: number;
@@ -65,6 +67,8 @@ export interface Issue {
   newsletterSlug: string;
   /** Is this a draft (kind 30024) or published (kind 30023)? */
   isDraft: boolean;
+  /** Is this a paid-only issue? */
+  paidOnly: boolean;
 }
 
 export interface EmailContact {
@@ -113,6 +117,9 @@ export function parseNewsletter(event: EventLike): Newsletter | null {
   const title = tagValue(event.tags, 'title');
   if (!slug || !title) return null;
 
+  const paidSatsStr = tagValue(event.tags, 'paid_sats');
+  const paidSats = paidSatsStr ? parseInt(paidSatsStr, 10) : undefined;
+
   return {
     id: event.id,
     pubkey: event.pubkey,
@@ -121,6 +128,7 @@ export function parseNewsletter(event: EventLike): Newsletter | null {
     description: tagValue(event.tags, 'description') ?? tagValue(event.tags, 'summary'),
     image: tagValue(event.tags, 'image'),
     defaultRelays: tagValues(event.tags, 'relay'),
+    paidSats: paidSats && !isNaN(paidSats) ? paidSats : undefined,
     stablezapOffer: tagValue(event.tags, 'stablezap'),
     refstrTerms: tagValue(event.tags, 'refstr'),
     topics: tagValues(event.tags, 't'),
@@ -150,6 +158,7 @@ export function parseIssue(event: EventLike): Issue | null {
     topics: tagValues(event.tags, 't'),
     newsletterSlug,
     isDraft: event.kind === DRAFT_KIND,
+    paidOnly: tagValue(event.tags, 'paid') === 'true',
   };
 }
 
@@ -167,6 +176,8 @@ export function buildIssueTags(opts: {
   topics: string[];
   newsletterPubkey: string;
   newsletterSlug: string;
+  /** Mark this issue as paid-only content */
+  paidOnly?: boolean;
 }): string[][] {
   const tags: string[][] = [
     ['d', opts.slug],
@@ -177,6 +188,7 @@ export function buildIssueTags(opts: {
   ];
   if (opts.summary) tags.push(['summary', opts.summary]);
   if (opts.image) tags.push(['image', opts.image]);
+  if (opts.paidOnly) tags.push(['paid', 'true']);
   for (const t of opts.topics) tags.push(['t', t]);
   return tags;
 }
@@ -188,6 +200,7 @@ export function buildNewsletterTags(opts: {
   image?: string;
   topics: string[];
   relays?: string[];
+  paidSats?: number;
   stablezapOffer?: string;
   refstrTerms?: string;
 }): string[][] {
@@ -202,6 +215,7 @@ export function buildNewsletterTags(opts: {
   if (opts.relays) {
     for (const r of opts.relays) tags.push(['relay', r]);
   }
+  if (opts.paidSats && opts.paidSats > 0) tags.push(['paid_sats', String(opts.paidSats)]);
   if (opts.stablezapOffer) tags.push(['stablezap', opts.stablezapOffer]);
   if (opts.refstrTerms) tags.push(['refstr', opts.refstrTerms]);
   return tags;

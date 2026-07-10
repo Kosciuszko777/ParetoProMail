@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useSeoMeta } from '@unhead/react';
-import { ArrowLeft, PenLine, Calendar, Settings, Users, Loader2, UserPlus, UserMinus } from 'lucide-react';
+import { ArrowLeft, PenLine, Calendar, Settings, Users, Loader2, UserPlus, UserMinus, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -35,7 +35,12 @@ function IssueCard({ issue }: { issue: Issue }) {
           </div>
         )}
         <CardHeader className="pb-2">
-          <CardTitle className="font-serif text-base leading-snug group-hover:text-primary/80 transition-colors">{issue.title}</CardTitle>
+          <div className="flex items-start gap-2">
+          <CardTitle className="font-serif text-base leading-snug group-hover:text-primary/80 transition-colors flex-1">{issue.title}</CardTitle>
+          {issue.paidOnly && (
+            <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+          )}
+        </div>
           {issue.summary && <CardDescription className="text-sm line-clamp-2">{issue.summary}</CardDescription>}
         </CardHeader>
         <CardContent className="pt-0">

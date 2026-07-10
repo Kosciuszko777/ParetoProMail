@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useSeoMeta } from '@unhead/react';
 import {
   ArrowLeft, PenLine, Loader2, Eye, EyeOff, Save, Send, ExternalLink, CheckCircle2,
-  FileText, Copy,
+  FileText, Copy, Lock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import { AppLayout } from '@/components/AppLayout';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useNostrPublish } from '@/hooks/useNostrPublish';
@@ -56,6 +57,7 @@ export default function ComposeIssue() {
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [publishedNaddr, setPublishedNaddr] = useState<string | null>(null);
+  const [paidOnly, setPaidOnly] = useState(false);
   const [draftLoaded, setDraftLoaded] = useState(false);
 
   // Load draft data into form
@@ -66,6 +68,7 @@ export default function ComposeIssue() {
       setContent(loadedDraft.content);
       setImage(loadedDraft.image ?? '');
       setTopicsInput(loadedDraft.topics.join(', '));
+      setPaidOnly(loadedDraft.paidOnly);
       if (loadedDraft.newsletterSlug) {
         setSelectedNl(loadedDraft.newsletterSlug);
       }
@@ -106,6 +109,7 @@ export default function ComposeIssue() {
         topics,
         newsletterPubkey: user.pubkey,
         newsletterSlug: chosenNl.slug,
+        paidOnly,
       });
       await publish({ kind: DRAFT_KIND, content, tags });
       setLastSaved(new Date());
@@ -138,6 +142,7 @@ export default function ComposeIssue() {
         topics,
         newsletterPubkey: user.pubkey,
         newsletterSlug: chosenNl.slug,
+        paidOnly,
       });
       const event = await publish({ kind: ISSUE_KIND, content, tags });
 
@@ -422,6 +427,24 @@ export default function ComposeIssue() {
                 </CardContent>
               </Card>
 
+              {/* Paid content toggle */}
+              {chosenNl?.paidSats && chosenNl.paidSats > 0 && (
+                <Card>
+                  <CardContent className="py-3 px-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Lock className="w-4 h-4 text-amber-500" />
+                        <div>
+                          <p className="text-sm font-medium">Paid only</p>
+                          <p className="text-xs text-muted-foreground">Require {chosenNl.paidSats} sats</p>
+                        </div>
+                      </div>
+                      <Switch checked={paidOnly} onCheckedChange={setPaidOnly} />
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Actions */}
               <div className="space-y-2">
                 <Button
@@ -430,7 +453,7 @@ export default function ComposeIssue() {
                   className="w-full"
                 >
                   {publishing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
-                  Publish
+                  {paidOnly ? 'Publish (Paid)' : 'Publish'}
                 </Button>
                 <Button
                   variant="outline"

@@ -1,9 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
-import { PenLine, BookOpen, Rss, FileText, Moon, Sun, Users } from 'lucide-react';
+import { PenLine, BookOpen, Rss, FileText, Moon, Sun, Users, Wallet } from 'lucide-react';
 import { LoginArea } from '@/components/auth/LoginArea';
+import { WalletModal } from '@/components/WalletModal';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/hooks/useTheme';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -20,6 +22,7 @@ const navItems = [
 export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
   const { theme, setTheme } = useTheme();
+  const { user } = useCurrentUser();
 
   return (
     <div className="min-h-screen bg-background">
@@ -57,6 +60,13 @@ export function AppLayout({ children }: AppLayoutProps) {
 
           {/* Right side */}
           <div className="flex items-center gap-2">
+            {user && (
+              <WalletModal>
+                <Button variant="ghost" size="icon" className="w-8 h-8">
+                  <Wallet className="w-4 h-4" />
+                </Button>
+              </WalletModal>
+            )}
             <Button
               variant="ghost"
               size="icon"

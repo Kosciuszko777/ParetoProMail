@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useSeoMeta } from '@unhead/react';
-import { ArrowLeft, Settings, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { AppLayout } from '@/components/AppLayout';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useNewsletter } from '@/hooks/useNewsletter';
@@ -29,6 +30,8 @@ export default function NewsletterSettingsPage() {
   const [description, setDescription] = useState('');
   const [image, setImage] = useState('');
   const [topicsInput, setTopicsInput] = useState('');
+  const [paidEnabled, setPaidEnabled] = useState(false);
+  const [paidSats, setPaidSats] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -37,6 +40,10 @@ export default function NewsletterSettingsPage() {
       setDescription(newsletter.description ?? '');
       setImage(newsletter.image ?? '');
       setTopicsInput(newsletter.topics.join(', '));
+      if (newsletter.paidSats && newsletter.paidSats > 0) {
+        setPaidEnabled(true);
+        setPaidSats(String(newsletter.paidSats));
+      }
     }
   }, [newsletter]);
 
@@ -47,6 +54,7 @@ export default function NewsletterSettingsPage() {
     if (!user || user.pubkey !== pubkey) return;
     setLoading(true);
     try {
+      const parsedPaidSats = paidEnabled ? parseInt(paidSats, 10) : undefined;
       const tags = buildNewsletterTags({
         slug,
         title,
@@ -54,6 +62,7 @@ export default function NewsletterSettingsPage() {
         image,
         topics,
         relays: newsletter?.defaultRelays,
+        paidSats: parsedPaidSats && !isNaN(parsedPaidSats) ? parsedPaidSats : undefined,
         stablezapOffer: newsletter?.stablezapOffer,
         refstrTerms: newsletter?.refstrTerms,
       });
@@ -123,12 +132,49 @@ export default function NewsletterSettingsPage() {
             </CardContent>
           </Card>
 
-          {/* Phase 4 placeholder */}
-          <Card className="border-dashed bg-accent/20">
+          {/* Monetization */}
+          <Card>
             <CardHeader>
-              <CardTitle className="font-serif text-base text-muted-foreground">Monetization & Growth</CardTitle>
-              <CardDescription>Stablezap paid tiers, Refstr referrals, and Recstr recommendations will be configurable here in a future phase.</CardDescription>
+              <div className="flex items-center gap-2">
+                <Zap className="w-5 h-5 text-amber-500" />
+                <CardTitle className="font-serif text-base">Monetization</CardTitle>
+              </div>
+              <CardDescription>
+                Enable paid subscriptions via Lightning zaps. Readers who zap you the required amount unlock paid content.
+              </CardDescription>
             </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Enable Paid Tier</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Allow marking issues as paid-only
+                  </p>
+                </div>
+                <Switch checked={paidEnabled} onCheckedChange={setPaidEnabled} />
+              </div>
+
+              {paidEnabled && (
+                <div className="space-y-1.5 pl-0 animate-in fade-in slide-in-from-top-1 duration-200">
+                  <Label>Minimum Zap (sats)</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={1}
+                      placeholder="1000"
+                      value={paidSats}
+                      onChange={(e) => setPaidSats(e.target.value)}
+                      className="max-w-32"
+                    />
+                    <span className="text-sm text-muted-foreground">sats</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+                    Readers who have zapped you at least this amount (cumulative) will automatically unlock paid issues.
+                    No database — paid status is derived from public zap receipts (kind 9735) on Nostr.
+                  </p>
+                </div>
+              )}
+            </CardContent>
           </Card>
 
           <div className="flex gap-3">

@@ -55,8 +55,9 @@ The author's publication identity. One author may run several newsletters (diffe
 | `image`       | NO       | Banner/logo URL |
 | `relay`       | NO       | Default relay(s) for this newsletter (repeatable) |
 | `t`           | NO       | Topic hashtag (repeatable) |
-| `stablezap`   | NO       | Stablezap offer address for paid subscriptions (Phase 4) |
-| `refstr`      | NO       | Refstr terms address for referrals (Phase 4) |
+| `paid_sats`   | NO       | Minimum cumulative zap sats for paid subscriber status |
+| `stablezap`   | NO       | Stablezap offer address for paid subscriptions |
+| `refstr`      | NO       | Refstr terms address for referrals |
 | `alt`         | YES      | Human-readable fallback |
 
 ---
@@ -85,6 +86,8 @@ Standard NIP-23 long-form event. The canonical artifact — exists independently
 ```
 
 The `a` tag links the issue to its parent newsletter config (`kind 35733`).
+
+Issues may include a `["paid", "true"]` tag to indicate the content is gated behind a paid subscription. The reader client checks the author's cumulative zap receipts (kind 9735) against the newsletter's `paid_sats` threshold to determine access.
 
 Drafts use **kind 30024** with the same structure. Publishing converts a draft to kind 30023.
 
@@ -130,7 +133,7 @@ The canonical issue on Nostr is censorship-resistant and self-owned. **Email del
 ## Subscription Model
 
 - **Free Nostr subscribers**: npubs who have opted in via a signed event (`t: nostrmail-subscribe`).
-- **Paid subscribers**: derived from Stablezap payment receipts against the newsletter's offer. No subscriber database — status is computed from public receipts.
+- **Paid subscribers**: derived from cumulative zap receipts (kind 9735) sent to the newsletter author. If the author's newsletter config includes a `paid_sats` tag, any reader whose total zaps to the author ≥ that threshold is recognized as a paid subscriber. No subscriber database — status is computed from public zap receipts.
 - **Email subscribers**: stored in the encrypted address book (kind 13039) with double-opt-in consent.
 
 ---
