@@ -9,6 +9,8 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 interface AppLayoutProps {
   children: React.ReactNode;
+  /** When true, the main content spans full width (for landing pages). */
+  fullWidth?: boolean;
 }
 
 const navItems = [
@@ -19,44 +21,47 @@ const navItems = [
   { to: '/subscribers', label: 'Subscribers', icon: Users },
 ];
 
-export function AppLayout({ children }: AppLayoutProps) {
+export function AppLayout({ children, fullWidth = false }: AppLayoutProps) {
   const location = useLocation();
   const { theme, setTheme } = useTheme();
   const { user } = useCurrentUser();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b bg-card/80 backdrop-blur-md">
-        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
+        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 shrink-0 group">
+            <img src="/logo.png" alt="" className="w-8 h-8 object-contain" />
             <span className="font-serif text-xl font-bold tracking-tight text-foreground">
               Pareto <span className="font-normal text-muted-foreground">Pro Mail</span>
             </span>
           </Link>
 
-          {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-1">
-            {navItems.map(({ to, label, icon: Icon }) => {
-              const active = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
-              return (
-                <Link
-                  key={to}
-                  to={to}
-                  className={cn(
-                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                    active
-                      ? 'bg-accent text-accent-foreground'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-accent/50',
-                  )}
-                >
-                  <Icon className="w-4 h-4" />
-                  {label}
-                </Link>
-              );
-            })}
-          </nav>
+          {/* Desktop nav — only when logged in */}
+          {user && (
+            <nav className="hidden md:flex items-center gap-1">
+              {navItems.map(({ to, label, icon: Icon }) => {
+                const active = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
+                return (
+                  <Link
+                    key={to}
+                    to={to}
+                    className={cn(
+                      'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                      active
+                        ? 'bg-accent text-accent-foreground'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-accent/50',
+                    )}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {label}
+                  </Link>
+                );
+              })}
+            </nav>
+          )}
 
           {/* Right side */}
           <div className="flex items-center gap-2">
@@ -79,39 +84,41 @@ export function AppLayout({ children }: AppLayoutProps) {
           </div>
         </div>
 
-        {/* Mobile nav */}
-        <div className="md:hidden border-t">
-          <div className="flex overflow-x-auto px-2 py-1.5 gap-1 scrollbar-none">
-            {navItems.map(({ to, label, icon: Icon }) => {
-              const active = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
-              return (
-                <Link
-                  key={to}
-                  to={to}
-                  className={cn(
-                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors shrink-0',
-                    active
-                      ? 'bg-accent text-accent-foreground'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-accent/50',
-                  )}
-                >
-                  <Icon className="w-4 h-4" />
-                  {label}
-                </Link>
-              );
-            })}
+        {/* Mobile nav — only when logged in */}
+        {user && (
+          <div className="md:hidden border-t">
+            <div className="flex overflow-x-auto px-2 py-1.5 gap-1 scrollbar-none">
+              {navItems.map(({ to, label, icon: Icon }) => {
+                const active = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
+                return (
+                  <Link
+                    key={to}
+                    to={to}
+                    className={cn(
+                      'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors shrink-0',
+                      active
+                        ? 'bg-accent text-accent-foreground'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-accent/50',
+                    )}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {label}
+                  </Link>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
       </header>
 
       {/* Main */}
-      <main className="max-w-5xl mx-auto px-4 py-8">
+      <main className={cn('flex-1', fullWidth ? 'w-full' : 'max-w-5xl mx-auto px-4 py-8 w-full')}>
         {children}
       </main>
 
       {/* Footer */}
-      <footer className="border-t mt-20 py-8 text-center text-sm text-muted-foreground">
-        <div className="max-w-5xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <footer className="border-t mt-20 py-8 text-sm text-muted-foreground">
+        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>
             <a href="https://shakespeare.diy" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
               Vibed with Shakespeare
