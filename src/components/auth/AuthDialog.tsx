@@ -33,6 +33,7 @@ import { useNostrPublish } from '@/hooks/useNostrPublish';
 import { useUploadFile } from '@/hooks/useUploadFile';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { markNeedsPlan } from '@/hooks/usePlan';
 import { generateSecretKey, getPublicKey, nip19 } from 'nostr-tools';
 
 interface AuthDialogProps {
@@ -289,6 +290,8 @@ const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose }) => {
     try {
       downloadNsecFile(nsec);
       login.nsec(nsec);
+      // Brand-new keypair: require a plan selection on first entry.
+      markNeedsPlan();
       setStep('profile');
     } catch {
       toast({

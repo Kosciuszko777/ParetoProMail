@@ -128,19 +128,19 @@ function LoggedOutView() {
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border bg-card/60 backdrop-blur px-3 py-1 text-xs font-medium text-muted-foreground mb-6">
                 <Shield className="w-3.5 h-3.5 text-primary" />
-                Self-custodial newsletter platform
+                Stop building on rented land
               </div>
 
               <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05] mb-6">
                 Own your audience.
                 <br />
-                <span className="text-primary">Trust no platform.</span>
+                <span className="text-primary">Own the relationship.</span>
               </h1>
 
               <p className="text-lg md:text-xl text-muted-foreground leading-relaxed mb-8 max-w-xl">
-                A newsletter &amp; client-relationship platform built for people who refuse to
-                hand their subscriber list to someone else. Censorship-resistant, protected by
-                cryptography, and entirely under your control.
+                Pareto is the shielded newsletter platform where your identity, subscriber list
+                and publishing network stay under your control — encrypted, portable and built to
+                survive any single platform.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -149,7 +149,7 @@ function LoggedOutView() {
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </GetStartedButton>
                 <Button asChild variant="outline" size="lg" className="rounded-full px-7">
-                  <a href="#how-it-works">See how it works</a>
+                  <Link to="/pricing">View pricing</Link>
                 </Button>
               </div>
 

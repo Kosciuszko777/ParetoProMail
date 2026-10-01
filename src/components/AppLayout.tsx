@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { PenLine, BookOpen, Rss, FileText, Moon, Sun, Users, Wallet } from 'lucide-react';
+import { PenLine, BookOpen, Rss, FileText, Moon, Sun, Users, Wallet, Tag } from 'lucide-react';
 import { LoginArea } from '@/components/auth/LoginArea';
 import { WalletModal } from '@/components/WalletModal';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ const navItems = [
   { to: '/issues', label: 'Issues', icon: BookOpen },
   { to: '/drafts', label: 'Drafts', icon: FileText },
   { to: '/subscribers', label: 'Subscribers', icon: Users },
+  { to: '/pricing', label: 'Pricing', icon: Tag },
 ];
 
 export function AppLayout({ children, fullWidth = false }: AppLayoutProps) {
@@ -65,6 +66,11 @@ export function AppLayout({ children, fullWidth = false }: AppLayoutProps) {
 
           {/* Right side */}
           <div className="flex items-center gap-2">
+            {!user && (
+              <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
+                <Link to="/pricing">Pricing</Link>
+              </Button>
+            )}
             {user && (
               <WalletModal>
                 <Button variant="ghost" size="icon" className="w-8 h-8">
