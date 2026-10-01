@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { UserCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button.tsx';
 import AuthDialog from './AuthDialog';
 import { useLoggedInAccounts } from '@/hooks/useLoggedInAccounts';
@@ -22,7 +23,8 @@ export function LoginArea({ className }: LoginAreaProps) {
           onClick={() => setAuthDialogOpen(true)}
           className="flex items-center gap-2 px-5 py-2 rounded-full bg-primary text-primary-foreground font-medium transition-all hover:bg-primary/90 animate-scale-in"
         >
-          <span className="truncate">Join</span>
+          <UserCircle2 className="w-4 h-4 shrink-0" />
+          <span className="truncate">Log in</span>
         </Button>
       )}
 
