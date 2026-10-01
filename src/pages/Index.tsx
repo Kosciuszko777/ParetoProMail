@@ -292,6 +292,54 @@ function LoggedOutView() {
         </div>
       </section>
 
+      {/* ── THE DISTILLED PROPOSITION (manifesto) ────────────────────────────── */}
+      <section className="relative bg-primary text-primary-foreground overflow-hidden">
+        {/* ambient texture */}
+        <div className="absolute inset-0 opacity-[0.07] bg-[radial-gradient(circle_at_20%_20%,white,transparent_55%),radial-gradient(circle_at_80%_80%,white,transparent_55%)]" />
+        <div className="relative max-w-5xl mx-auto px-4 py-20 md:py-28">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary-foreground/20 bg-primary-foreground/5 px-3 py-1 text-xs font-medium text-primary-foreground/80 mb-8">
+              <Shield className="w-3.5 h-3.5" />
+              The distilled proposition
+            </div>
+
+            <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold leading-[1.1] mb-6">
+              Shielded newsletter infrastructure for those who cannot afford to lose control of their audience.
+            </h2>
+
+            <p className="text-lg md:text-xl text-primary-foreground/70 leading-relaxed">
+              No phone number. No mandatory email identity. No advertising profile.
+              No unnecessary tracking.
+            </p>
+          </div>
+
+          {/* Declarative ownership list */}
+          <div className="mt-12 grid sm:grid-cols-2 gap-x-10 gap-y-px rounded-2xl border border-primary-foreground/15 overflow-hidden">
+            {[
+              { k: 'Your identity', v: 'is a keypair.' },
+              { k: 'Your subscriber list', v: 'is encrypted.' },
+              { k: 'Your audience', v: 'belongs to you.' },
+              { k: 'Your payment relationships', v: 'belong to you.' },
+              { k: 'Your content', v: 'can be published across Nostr.' },
+              { k: 'Your distribution', v: 'no longer depends on a conventional email provider.' },
+            ].map(({ k, v }) => (
+              <div
+                key={k}
+                className="flex items-baseline gap-2 flex-wrap px-5 py-5 bg-primary-foreground/[0.04] border-b border-primary-foreground/10"
+              >
+                <span className="font-serif text-lg md:text-xl font-semibold">{k}</span>
+                <span className="text-primary-foreground/70 text-base md:text-lg">{v}</span>
+              </div>
+            ))}
+          </div>
+
+          <p className="mt-8 text-sm text-primary-foreground/60 max-w-2xl leading-relaxed">
+            And increasingly, your distribution itself will no longer depend on a conventional
+            email provider — the audience you build here stays portable, signed, and sovereign.
+          </p>
+        </div>
+      </section>
+
       {/* ── HOW IT WORKS ─────────────────────────────────────────────────────── */}
       <section id="how-it-works" className="max-w-6xl mx-auto px-4 py-16 md:py-20">
         <div className="text-center max-w-2xl mx-auto mb-12">
