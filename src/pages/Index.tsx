@@ -6,6 +6,8 @@ import {
   Shield, Lock, KeyRound, EyeOff, Bitcoin, Zap, Mail, UserCheck,
   Upload, Send, LayoutTemplate, ArrowRight, Check, Fingerprint,
   Building2, Coins, Users, Sparkles,
+  ShieldCheck, SlidersHorizontal, Network, RadioTower, Wallet,
+  BadgeDollarSign, Gift,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -292,51 +294,101 @@ function LoggedOutView() {
         </div>
       </section>
 
-      {/* ── THE DISTILLED PROPOSITION (manifesto) ────────────────────────────── */}
+      {/* ── THE SOVEREIGN PROPOSAL ───────────────────────────────────────────── */}
       <section className="relative bg-primary text-primary-foreground overflow-hidden">
         {/* ambient texture */}
-        <div className="absolute inset-0 opacity-[0.07] bg-[radial-gradient(circle_at_20%_20%,white,transparent_55%),radial-gradient(circle_at_80%_80%,white,transparent_55%)]" />
-        <div className="relative max-w-5xl mx-auto px-4 py-20 md:py-28">
-          <div className="max-w-3xl">
+        <div className="absolute inset-0 opacity-[0.07] bg-[radial-gradient(circle_at_20%_15%,white,transparent_55%),radial-gradient(circle_at_85%_85%,white,transparent_55%)]" />
+        <div className="relative max-w-6xl mx-auto px-4 py-20 md:py-28">
+          <div className="text-center max-w-3xl mx-auto mb-14">
             <div className="inline-flex items-center gap-2 rounded-full border border-primary-foreground/20 bg-primary-foreground/5 px-3 py-1 text-xs font-medium text-primary-foreground/80 mb-8">
               <Shield className="w-3.5 h-3.5" />
-              The distilled proposition
+              The Sovereign Proposal
             </div>
 
-            <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold leading-[1.1] mb-6">
-              Shielded newsletter infrastructure for those who cannot afford to lose control of their audience.
+            <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold leading-[1.1]">
+              Everything that matters stays yours.
             </h2>
-
-            <p className="text-lg md:text-xl text-primary-foreground/70 leading-relaxed">
-              No phone number. No mandatory email identity. No advertising profile.
-              No unnecessary tracking.
-            </p>
           </div>
 
-          {/* Declarative ownership list */}
-          <div className="mt-12 grid sm:grid-cols-2 gap-x-10 gap-y-px rounded-2xl border border-primary-foreground/15 overflow-hidden">
+          {/* 10-point grid */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-px rounded-2xl border border-primary-foreground/15 overflow-hidden bg-primary-foreground/10">
             {[
-              { k: 'Your identity', v: 'is a keypair.' },
-              { k: 'Your subscriber list', v: 'is encrypted.' },
-              { k: 'Your audience', v: 'belongs to you.' },
-              { k: 'Your payment relationships', v: 'belong to you.' },
-              { k: 'Your content', v: 'can be published across Nostr.' },
-              { k: 'Your distribution', v: 'no longer depends on a conventional email provider.' },
-            ].map(({ k, v }) => (
+              {
+                icon: ShieldCheck,
+                title: 'Shielded Audience',
+                short: 'Encrypted. Portable. Never monetized.',
+                desc: 'Your subscriber list is encrypted, portable and yours alone. We never monetize your data.',
+              },
+              {
+                icon: KeyRound,
+                title: 'Sovereign Identity',
+                short: 'No phone. No mandatory email. Your keys.',
+                desc: 'No phone. No mandatory email. Your keypair is your identity. Pseudonymous if you choose.',
+              },
+              {
+                icon: SlidersHorizontal,
+                title: 'Publisher-Governed',
+                short: 'Your publication. Your rules.',
+                desc: 'Your publication, your rules. You decide what is stored, published, measured and shared.',
+              },
+              {
+                icon: Network,
+                title: 'Portable Network',
+                short: 'Your audience moves with you.',
+                desc: 'No platform lock-in. Export your audience and take your subscriber relationships wherever you go.',
+              },
+              {
+                icon: EyeOff,
+                title: 'Privacy by Default',
+                short: 'No surveillance. No advertising profiles.',
+                desc: 'No surveillance marketing. No advertising profiles. No unnecessary data collection or third-party tracking.',
+              },
+              {
+                icon: RadioTower,
+                title: 'Censorship-Resistant',
+                short: 'Signed publishing across independent relays.',
+                desc: 'Cryptographically signed publishing across independent Nostr relays. No single point of publication failure.',
+              },
+              {
+                icon: Send,
+                title: 'Sovereign Distribution',
+                short: 'Email today. Nostr-native mail tomorrow.',
+                desc: 'Email today. Nostr-native mail tomorrow. Build a communication channel no single provider controls.',
+              },
+              {
+                icon: Wallet,
+                title: 'Fiat + Bitcoin',
+                short: 'Pay and get paid in fiat or Lightning. Non-custodial.',
+                desc: 'Pay for Pareto with fiat or Bitcoin/Lightning. Monetize newsletters through the same rails. Pareto never holds your funds.',
+              },
+              {
+                icon: BadgeDollarSign,
+                title: 'Direct Monetization',
+                short: 'Subscriptions and payments, directly from your readers.',
+                desc: 'Subscriptions, memberships, paid content, tips and Lightning payments — directly between publisher and reader.',
+              },
+              {
+                icon: Gift,
+                title: 'Built Bottom-Up',
+                short: 'Use it. Grow it. Refer it. Earn with it.',
+                desc: 'Use Pareto. Help grow the network. Earn attractive referral rewards or join as an Ambassador and participate in its growth.',
+              },
+            ].map(({ icon: Icon, title, short, desc }) => (
               <div
-                key={k}
-                className="flex items-baseline gap-2 flex-wrap px-5 py-5 bg-primary-foreground/[0.04] border-b border-primary-foreground/10"
+                key={title}
+                className="group bg-primary px-6 py-6 transition-colors hover:bg-primary-foreground/[0.04]"
               >
-                <span className="font-serif text-lg md:text-xl font-semibold">{k}</span>
-                <span className="text-primary-foreground/70 text-base md:text-lg">{v}</span>
+                <div className="flex items-center gap-3 mb-2.5">
+                  <div className="w-10 h-10 rounded-xl bg-primary-foreground/10 flex items-center justify-center shrink-0">
+                    <Icon className="w-5 h-5 text-primary-foreground" />
+                  </div>
+                  <h3 className="font-serif text-lg font-semibold leading-tight">{title}</h3>
+                </div>
+                <p className="text-sm font-medium text-primary-foreground/90 mb-1.5">{short}</p>
+                <p className="text-sm text-primary-foreground/60 leading-relaxed">{desc}</p>
               </div>
             ))}
           </div>
-
-          <p className="mt-8 text-sm text-primary-foreground/60 max-w-2xl leading-relaxed">
-            And increasingly, your distribution itself will no longer depend on a conventional
-            email provider — the audience you build here stays portable, signed, and sovereign.
-          </p>
         </div>
       </section>
 
