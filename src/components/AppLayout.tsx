@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { PenLine, BookOpen, Rss, FileText, Moon, Sun, Users, Wallet, Tag } from 'lucide-react';
+import { PenLine, BookOpen, Rss, FileText, Moon, Sun, Users, Wallet, Tag, Shield } from 'lucide-react';
 import { LoginArea } from '@/components/auth/LoginArea';
 import { WalletModal } from '@/components/WalletModal';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ const navItems = [
   { to: '/compose', label: 'Write', icon: PenLine },
   { to: '/issues', label: 'Issues', icon: BookOpen },
   { to: '/drafts', label: 'Drafts', icon: FileText },
+  { to: '/audience', label: 'Audience', icon: Shield },
   { to: '/subscribers', label: 'Subscribers', icon: Users },
   { to: '/pricing', label: 'Pricing', icon: Tag },
 ];

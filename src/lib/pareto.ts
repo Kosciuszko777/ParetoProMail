@@ -28,6 +28,15 @@ export const DELIVERY_RECORD_KIND = 35647;
 /** Encrypted email address book (replaceable, NIP-44 encrypted to self) */
 export const ADDRESS_BOOK_KIND = 13039;
 
+/**
+ * Audience Vault contact record (addressable: pubkey + kind + d-tag).
+ * One event per contact. `d` = internal relationship ID. All sensitive
+ * fields live in the NIP-44-encrypted `content` (encrypted to self).
+ * Public tags carry only non-identifying metadata used for relay-side
+ * filtering (status, type, membership). No PII is ever published in clear.
+ */
+export const AUDIENCE_CONTACT_KIND = 36697;
+
 // ─── Subscription Tags ─────────────────────────────────────────────────────────
 
 export const SUBSCRIBE_TAG = 'nostrmail-subscribe';
@@ -79,6 +88,87 @@ export interface EmailContact {
   npub?: string;
   /** Double-opt-in consent timestamp (required for SMTP bridge) */
   consentAt?: number;
+}
+
+// ─── Audience Vault ──────────────────────────────────────────────────────────
+
+/** Identity shape — a contact can exist with any combination of these. */
+export type ContactIdentityKind = 'email' | 'nostr' | 'hybrid' | 'pseudonymous';
+
+/** Channel a contact is reachable / subscribed through. */
+export type ContactType = 'email' | 'nostr' | 'hybrid';
+
+/** Legitimate publisher-managed subscription states. */
+export type SubscriptionStatus =
+  | 'subscribed'
+  | 'unsubscribed'
+  | 'pending'
+  | 'suppressed'
+  | 'bounced'
+  | 'follower'
+  | 'paid'
+  | 'founding';
+
+/** Membership state (independent of subscription). */
+export type MembershipStatus = 'free' | 'paid' | 'founding' | 'cancelled' | 'none';
+
+/** Payment lifecycle for the relationship. */
+export type PaymentStatus = 'active' | 'cancelled' | 'none';
+
+/** How the publisher acquired this relationship. */
+export type ContactSource = 'referral' | 'direct' | 'nostr' | 'import' | 'manual';
+
+/** A single audit-trail entry for important status changes. */
+export interface ContactAuditEntry {
+  at: number;
+  /** e.g. "status:subscribed", "membership:paid" */
+  change: string;
+  note?: string;
+}
+
+/**
+ * The private, decrypted payload stored (NIP-44, encrypted to self) in the
+ * `content` of an AUDIENCE_CONTACT_KIND event. Everything sensitive lives here.
+ */
+export interface ContactPrivate {
+  displayName?: string;
+  email?: string;
+  npub?: string;
+  nip05?: string;
+  tags: string[];
+  source: ContactSource;
+  referredBy?: string;
+  /** Free-form publisher notes — never surveillance-derived. */
+  notes?: string;
+  /** Publisher-recorded consent (e.g. double-opt-in). */
+  consentAt?: number;
+  consentNote?: string;
+  /** Lists the contact belongs to (publication slugs or custom lists). */
+  lists: string[];
+  /** Preferences the subscriber has expressed. */
+  prefs: {
+    email?: boolean;
+    nostr?: boolean;
+    frequency?: 'all' | 'weekly' | 'monthly';
+  };
+  /** Payment method on record (no card data — just a label). */
+  paymentMethod?: 'lightning' | 'onchain' | 'card' | 'none';
+  audit: ContactAuditEntry[];
+}
+
+/** The fully-resolved contact used across the UI. */
+export interface Contact extends ContactPrivate {
+  /** Internal relationship ID (the `d` tag) — the only required field. */
+  id: string;
+  /** Owning publisher pubkey. */
+  pubkey: string;
+  identityKind: ContactIdentityKind;
+  type: ContactType;
+  status: SubscriptionStatus;
+  membership: MembershipStatus;
+  payment: PaymentStatus;
+  joinedAt: number;
+  updatedAt: number;
 }
 
 export interface DeliveryRecord {
@@ -234,4 +324,91 @@ export function slugify(text: string): string {
 export function issueSlug(newsletterSlug: string, title: string): string {
   const base = slugify(title).slice(0, 50);
   return `${newsletterSlug}-${base}`;
+}
+
+// ─── Audience Vault Helpers ────────────────────────────────────────────────────
+
+/** Generate a random, non-sequential internal relationship ID. */
+export function newContactId(): string {
+  const rand = crypto.getRandomValues(new Uint8Array(8));
+  const hex = Array.from(rand).map((b) => b.toString(16).padStart(2, '0')).join('');
+  return `c_${hex}`;
+}
+
+/** Derive the identity kind from which identifiers are present. */
+export function deriveIdentityKind(p: Pick<ContactPrivate, 'email' | 'npub' | 'nip05' | 'displayName'>): ContactIdentityKind {
+  const hasEmail = !!p.email;
+  const hasNostr = !!(p.npub || p.nip05);
+  if (hasEmail && hasNostr) return 'hybrid';
+  if (hasNostr) return 'nostr';
+  if (hasEmail) return 'email';
+  return 'pseudonymous';
+}
+
+/** Derive the reachable channel type from identifiers. */
+export function deriveContactType(p: Pick<ContactPrivate, 'email' | 'npub' | 'nip05'>): ContactType {
+  const hasEmail = !!p.email;
+  const hasNostr = !!(p.npub || p.nip05);
+  if (hasEmail && hasNostr) return 'hybrid';
+  if (hasNostr) return 'nostr';
+  return 'email';
+}
+
+/**
+ * Public (non-PII) tags for a contact event. These enable relay-side filtering
+ * WITHOUT leaking any identifying information. Sensitive data stays encrypted.
+ */
+export function buildContactTags(opts: {
+  id: string;
+  status: SubscriptionStatus;
+  type: ContactType;
+  membership: MembershipStatus;
+  payment: PaymentStatus;
+  joinedAt: number;
+}): string[][] {
+  return [
+    ['d', opts.id],
+    ['alt', 'Pareto Audience Vault — encrypted private contact record'],
+    ['status', opts.status],
+    ['ctype', opts.type],
+    ['membership', opts.membership],
+    ['payment', opts.payment],
+    ['joined', String(opts.joinedAt)],
+    // Explicit, machine-readable privacy marker.
+    ['vault', 'encrypted'],
+  ];
+}
+
+export const SUBSCRIPTION_STATUS_LABEL: Record<SubscriptionStatus, string> = {
+  subscribed: 'Subscribed',
+  unsubscribed: 'Unsubscribed',
+  pending: 'Pending confirmation',
+  suppressed: 'Suppressed',
+  bounced: 'Bounced',
+  follower: 'Nostr follower',
+  paid: 'Paid member',
+  founding: 'Founding member',
+};
+
+export const MEMBERSHIP_LABEL: Record<MembershipStatus, string> = {
+  free: 'Free',
+  paid: 'Paid',
+  founding: 'Founding',
+  cancelled: 'Cancelled',
+  none: '—',
+};
+
+export const SOURCE_LABEL: Record<ContactSource, string> = {
+  referral: 'Referral',
+  direct: 'Direct',
+  nostr: 'Nostr',
+  import: 'Import',
+  manual: 'Manual',
+};
+
+/** Short, human-friendly date (e.g. "12 Sep 2026"). */
+export function formatContactDate(ts: number): string {
+  return new Date(ts * 1000).toLocaleDateString('en-GB', {
+    day: '2-digit', month: 'short', year: 'numeric',
+  });
 }
